@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --color-twilight: #03045e; /* deep-twilight: headings, nav, text */
+  --color-teal: #0077b6;     /* bright-teal-blue: primary buttons, links */
+  --color-surf: #00b4d8;     /* turquoise-surf: accents, progress, today */
+  --color-frost: #90e0ef;    /* frosted-blue: borders, secondary, done */
+  --color-cyan: #caf0f8;     /* light-cyan: backgrounds */
+  --font-sans: var(--font-geist-sans);
+}
+
+body {
+  background: #f3fcfe;
+  color: var(--color-twilight);
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-frost bg-white p-4 shadow-sm;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center rounded-xl bg-teal px-4 py-2 font-medium text-white transition hover:bg-twilight disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl border border-frost bg-cyan px-4 py-2 font-medium text-twilight transition hover:bg-frost disabled:opacity-50;
+  }
+  .input {
+    @apply w-full rounded-xl border border-frost bg-white px-3 py-2 text-twilight outline-none focus:border-surf focus:ring-2 focus:ring-cyan;
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium text-twilight;
+  }
+  .chip {
+    @apply cursor-pointer rounded-full border border-frost bg-white px-3 py-1 text-sm text-twilight transition;
+  }
+  .chip-on {
+    @apply border-teal bg-teal text-white;
+  }
+}
