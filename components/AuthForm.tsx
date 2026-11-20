@@ -6,6 +6,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { fadeOutMs, wait } from "@/lib/motion";
 import { isPremiumStatus } from "@/lib/premium";
+import Logo from "@/components/Logo";
 
 export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
@@ -43,9 +44,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const isLogin = mode === "login";
   return (
     <div className={`mx-auto mt-10 max-w-sm ${leaving ? "fade-out" : ""}`}>
-      <h1 className="mb-1 text-center text-3xl font-bold">
-        Gym<span className="text-teal">Nado</span>
-      </h1>
+      <h1 className="mb-1 flex justify-center text-3xl"><Logo size={44} /></h1>
       <p className="mb-6 text-center text-twilight/70">Progress starts here.</p>
       <form onSubmit={submit} className="card space-y-4">
         <div>

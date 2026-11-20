@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { chooseSplit } from "./splits";
-import { generatePlan } from "./generate";
+import { estimateMinutes, fitToTime, generatePlan, MAX_SESSION_MIN } from "./generate";
 import { EXERCISE_BY_ID, EXERCISES } from "./exercises";
 import { dailyTargets } from "./macros";
 import { cmToFtIn, ftInToCm, kgToLb, lbToKg } from "./units";
@@ -78,10 +78,36 @@ describe("generatePlan", () => {
     const strength = generatePlan({ ...base, physique_goal: "strength" });
     const firstCompound = strength.days[0].exercises.find((e) => EXERCISE_BY_ID[e.exercise_id].category === "compound")!;
     expect(firstCompound.reps).toBe("3-5");
-    expect(firstCompound.rest_sec).toBe(180);
+    expect(firstCompound.rest_sec).toBe(150);
 
     const lean = generatePlan({ ...base, physique_goal: "lean" });
     for (const d of lean.days) expect(EXERCISE_BY_ID[d.exercises.at(-1)!.exercise_id].category).toBe("conditioning");
+  });
+
+  it("keeps every session to about an hour", () => {
+    const goals = ["lean", "muscular", "strength", "athletic"] as const;
+    const levels = ["beginner", "intermediate", "advanced"] as const;
+    const dayCounts = [[1, 4], [1, 3, 5], [1, 2, 4, 5], [1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]];
+    for (const physique_goal of goals) {
+      for (const experience of levels) {
+        for (const training_days of dayCounts) {
+          for (const sports of [[], ["boxing", "running", "tennis"]] as Sport[][]) {
+            const plan = generatePlan({ ...base, physique_goal, experience, training_days, sports, target_muscles: ["chest", "biceps", "glutes"] });
+            for (const d of plan.days) {
+              expect(estimateMinutes(d.exercises)).toBeLessThanOrEqual(MAX_SESSION_MIN);
+              expect(d.exercises.length).toBeGreaterThanOrEqual(3);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it("fitToTime trims sets before dropping exercises", () => {
+    const long = Array.from({ length: 8 }, (_, i) => ({ exercise_id: EXERCISES.filter((e) => e.category === "isolation" && !e.sports.length)[i].id, sets: 5, reps: "10", rest_sec: 90 }));
+    const fitted = fitToTime(long);
+    expect(estimateMinutes(fitted)).toBeLessThanOrEqual(MAX_SESSION_MIN);
+    expect(fitted.every((x) => x.sets <= 3)).toBe(true);
   });
 
   it("puts athletic power work first and scales sets by experience", () => {

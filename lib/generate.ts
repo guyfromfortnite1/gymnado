@@ -1,4 +1,4 @@
-import { EXERCISES, isAvailable, type Exercise } from "./exercises";
+import { EXERCISE_BY_ID, EXERCISES, isAvailable, type Exercise } from "./exercises";
 import { chooseSplit, type Slot } from "./splits";
 import type { Equipment, Experience, Goal, PlanDay, PlanExercise, Profile } from "./types";
 
@@ -9,9 +9,64 @@ type Scheme = [number, string, number];
 const SCHEMES: Record<Goal, { compound: Scheme; isolation: Scheme }> = {
   lean: { compound: [3, "10-12", 75], isolation: [3, "12-15", 45] },
   muscular: { compound: [4, "8-10", 90], isolation: [3, "10-12", 60] },
-  strength: { compound: [5, "3-5", 180], isolation: [3, "8-10", 90] },
+  strength: { compound: [4, "3-5", 150], isolation: [3, "8-10", 90] },
   athletic: { compound: [4, "5-8", 120], isolation: [3, "8-12", 60] },
 };
+
+// ---- Session length: every day should fit in about an hour ----
+
+export const MAX_SESSION_MIN = 60;
+const WARM_UP_MIN = 5;
+const WORK_SEC_PER_SET = 40;
+const SETUP_MIN_PER_EXERCISE = 1;
+const CONDITIONING_MIN = 10;
+
+/** Rough minutes for a session: warm-up + each exercise's work, rest and setup. */
+export function estimateMinutes(exercises: PlanExercise[]): number {
+  let min = WARM_UP_MIN;
+  for (const pe of exercises) {
+    const e = EXERCISE_BY_ID[pe.exercise_id];
+    min += e?.category === "conditioning" ? CONDITIONING_MIN : (pe.sets * (WORK_SEC_PER_SET + pe.rest_sec)) / 60 + SETUP_MIN_PER_EXERCISE;
+  }
+  return Math.round(min);
+}
+
+/**
+ * Trims a session to MAX_SESSION_MIN: first cut big lifts down to 3 sets, then drop
+ * isolation, then compound lifts (latest first, keeping at least 3 exercises).
+ * Sport, jump (plyo) and conditioning work is never dropped.
+ */
+export function fitToTime(exercises: PlanExercise[]): PlanExercise[] {
+  const out = exercises.map((x) => ({ ...x }));
+  const over = () => estimateMinutes(out) > MAX_SESSION_MIN;
+  while (over()) {
+    const biggest = out.filter((x) => x.sets > 3).sort((a, b) => b.sets - a.sets)[0];
+    if (!biggest) break;
+    biggest.sets -= 1;
+  }
+  const droppable = (cat: "isolation" | "compound") => {
+    for (let i = out.length - 1; i >= 0; i--) {
+      const e = EXERCISE_BY_ID[out[i].exercise_id];
+      if (e?.category === cat && e.sports.length === 0) return i;
+    }
+    return -1;
+  };
+  for (const cat of ["isolation", "compound"] as const) {
+    while (over() && out.length > 3) {
+      const i = droppable(cat);
+      if (i < 0) break;
+      out.splice(i, 1);
+    }
+  }
+  // Last resorts for very full days (several sports + power + finisher): 2 sets each, then drop the latest extra.
+  while (over()) {
+    const biggest = out.filter((x) => x.sets > 2 && EXERCISE_BY_ID[x.exercise_id]?.category !== "conditioning").sort((a, b) => b.sets - a.sets)[0];
+    if (!biggest) break;
+    biggest.sets -= 1;
+  }
+  while (over() && out.length > 3) out.splice(out.length - 2, 1); // keep the final finisher, drop the one before it
+  return out;
+}
 
 export function prescribe(e: Exercise, goal: Goal, experience: Experience): PlanExercise {
   const [baseSets, reps, rest]: Scheme =
@@ -21,7 +76,7 @@ export function prescribe(e: Exercise, goal: Goal, experience: Experience): Plan
   let sets = baseSets;
   if (e.category !== "conditioning") {
     if (experience === "beginner") sets = Math.max(2, sets - 1);
-    if (experience === "advanced" && e.category === "compound") sets = Math.min(6, sets + 1);
+    if (experience === "advanced" && e.category === "compound") sets = Math.min(5, sets + 1);
   }
   return { exercise_id: e.id, sets, reps: e.fixedReps ?? reps, rest_sec: rest };
 }
@@ -74,7 +129,7 @@ export function generatePlan(p: PlanInput): { splitName: string; days: PlanDay[]
     if (p.physique_goal === "lean") pick(pool.filter((e) => e.category === "conditioning"), dayIndex);
 
     const ordered = [...picked].sort((a, b) => ORDER[a.category] - ORDER[b.category]);
-    return { name: day.name, exercises: ordered.map((e) => prescribe(e, p.physique_goal, p.experience)) };
+    return { name: day.name, exercises: fitToTime(ordered.map((e) => prescribe(e, p.physique_goal, p.experience))) };
   });
 
   return { splitName: split.name, days };

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import MuscleMap from "@/components/MuscleMap";
 import PremiumSurface, { PremiumBadge } from "@/components/PremiumSurface";
 import { useScanStatus } from "@/lib/hooks";
 import { createClient } from "@/lib/supabase/client";
@@ -42,7 +43,7 @@ function Option({ on, onClick, label, blurb }: { on: boolean; onClick: () => voi
       type="button"
       onClick={onClick}
       aria-pressed={on}
-      className={`w-full rounded-xl border p-3 text-left transition ${on ? "border-teal bg-teal text-white" : "border-frost bg-white hover:bg-cyan"}`}
+      className={`w-full rounded-xl border p-3 text-left transition duration-200 hover:scale-[1.03] hover:shadow-md ${on ? "border-teal bg-teal text-white" : "border-frost bg-white hover:bg-cyan"}`}
     >
       <div className="font-semibold">{label}</div>
       {blurb && <div className={`text-sm ${on ? "text-cyan" : "text-twilight/60"}`}>{blurb}</div>}
@@ -51,15 +52,19 @@ function Option({ on, onClick, label, blurb }: { on: boolean; onClick: () => voi
 }
 
 /** A multi-select choice shown as a photo card (photos live in public/muscles and public/sports). */
-function PhotoCard({ src, label, on, onClick }: { src: string; label: string; on: boolean; onClick: () => void }) {
+function PhotoCard({ src, muscle, label, on, onClick }: { src?: string; muscle?: Muscle; label: string; on: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={on}
-      className={`group relative overflow-hidden rounded-xl border-2 text-left transition ${on ? "border-teal" : "border-frost hover:border-surf"}`}
+      className={`relative overflow-hidden rounded-xl border-2 text-left transition duration-200 hover:z-10 hover:scale-105 hover:shadow-lg ${on ? "border-teal" : "border-frost hover:border-surf"}`}
     >
-      <Image src={src} alt="" width={240} height={180} className={`h-24 w-full object-cover transition duration-300 ${on ? "scale-105" : "group-hover:scale-105"}`} />
+      {muscle ? (
+        <MuscleMap muscles={[muscle]} className={`h-24 py-1 ${on ? "bg-cyan" : "bg-white"}`} />
+      ) : (
+        <Image src={src!} alt="" width={240} height={180} className="h-24 w-full object-cover" />
+      )}
       <span className={`block px-2 py-1 text-sm font-semibold ${on ? "bg-teal text-white" : "bg-white text-twilight"}`}>{label}</span>
       {on && <span className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-teal text-sm text-white shadow" aria-hidden>✓</span>}
     </button>
@@ -210,40 +215,7 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
       body: (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
           {(Object.keys(MUSCLES) as Muscle[]).map((m) => (
-            <PhotoCard key={m} src={`/muscles/${m}.jpg`} label={MUSCLES[m]} on={p.target_muscles.includes(m)} onClick={() => set("target_muscles", toggle(p.target_muscles, m))} />
-          ))}
-        </div>
-      ),
-    },
-    {
-      title: "Do you play any sports?",
-      hint: premium ? "Optional. Pick as many as you like. Each one adds a sport-specific exercise to every workout." : undefined,
-      body: !premium ? (
-        <PremiumSurface className="space-y-3">
-          <PremiumBadge />
-          <p className="text-lg font-semibold">Build a physique for your sport</p>
-          <p className="text-sm text-cyan/90">
-            Premium adds sport-specific exercises to every workout, for basketball, soccer, boxing, running, tennis and more.
-          </p>
-          <a href="/premium" target="_blank" rel="noopener" className="inline-flex rounded-xl bg-white px-4 py-2 font-semibold text-twilight transition hover:bg-cyan">
-            Upgrade to unlock
-          </a>
-          <p className="text-xs text-cyan/70">Opens in a new tab so you keep your answers. Or press Continue to skip.</p>
-        </PremiumSurface>
-      ) : (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <PhotoCard src="/sports/none.jpg" label="None" on={p.sports.length === 0} onClick={() => set("sports", [])} />
-          </div>
-          {Object.entries(SPORT_GROUPS).map(([group, sports]) => (
-            <div key={group}>
-              <p className="mb-1 text-sm font-medium text-twilight/60">{group}</p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {Object.entries(sports).map(([id, label]) => (
-                  <PhotoCard key={id} src={`/sports/${id}.jpg`} label={label} on={p.sports.includes(id as Sport)} onClick={() => set("sports", toggle(p.sports, id as Sport))} />
-                ))}
-              </div>
-            </div>
+            <PhotoCard key={m} muscle={m} label={MUSCLES[m]} on={p.target_muscles.includes(m)} onClick={() => set("target_muscles", toggle(p.target_muscles, m))} />
           ))}
         </div>
       ),
@@ -269,6 +241,39 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
             <Chip key={k} on={p.missing_equipment.includes(k)} onClick={() => set("missing_equipment", toggle(p.missing_equipment, k))}>
               {p.missing_equipment.includes(k) ? "✕ " : ""}{EQUIPMENT[k]}
             </Chip>
+          ))}
+        </div>
+      ),
+    },
+    {
+      title: "Do you play any sports?",
+      hint: premium ? "Optional. Pick as many as you like. Each one adds a sport-specific exercise to every workout." : undefined,
+      body: !premium ? (
+        <PremiumSurface className="space-y-3">
+          <PremiumBadge />
+          <p className="text-lg font-semibold">Build a physique for your sport</p>
+          <p className="text-sm text-cyan/90">
+            Premium adds sport-specific exercises to every workout, for basketball, soccer, boxing, running, tennis and more.
+          </p>
+          <a href="/premium" target="_blank" rel="noopener" className="inline-flex rounded-xl bg-white px-4 py-2 font-semibold text-twilight transition hover:bg-cyan">
+            Upgrade to unlock
+          </a>
+          <p className="text-xs text-cyan/70">Opens in a new tab so you keep your answers. Or finish below without it.</p>
+        </PremiumSurface>
+      ) : (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <PhotoCard src="/sports/none.jpg" label="None" on={p.sports.length === 0} onClick={() => set("sports", [])} />
+          </div>
+          {Object.entries(SPORT_GROUPS).map(([group, sports]) => (
+            <div key={group}>
+              <p className="mb-1 text-sm font-medium text-twilight/60">{group}</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {Object.entries(sports).map(([id, label]) => (
+                  <PhotoCard key={id} src={`/sports/${id}.jpg`} label={label} on={p.sports.includes(id as Sport)} onClick={() => set("sports", toggle(p.sports, id as Sport))} />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       ),

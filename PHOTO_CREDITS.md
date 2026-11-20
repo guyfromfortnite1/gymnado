@@ -1,19 +1,9 @@
 # Photo credits
 
-All photos in `public/muscles` and `public/sports` are from [Pexels](https://www.pexels.com) under the [Pexels License](https://www.pexels.com/license/) (free for commercial use; attribution not required). Resized to 480 px wide.
+All photos in `public/sports` are from [Pexels](https://www.pexels.com) under the [Pexels License](https://www.pexels.com/license/) (free for commercial use; attribution not required). Resized to 480 px wide.
 
 | File | Source |
 |---|---|
-| muscles/chest.jpg | https://www.pexels.com/photo/3837743/ (Andrea Piacquadio) |
-| muscles/back.jpg | https://www.pexels.com/photo/34043598/ (Zeal Creative Studios) |
-| muscles/shoulders.jpg | https://www.pexels.com/photo/29865137/ |
-| muscles/biceps.jpg | https://www.pexels.com/photo/5327571/ (Tima Miroshnichenko) |
-| muscles/triceps.jpg | https://www.pexels.com/photo/5327475/ (Tima Miroshnichenko) |
-| muscles/quads.jpg | https://www.pexels.com/photo/19722966/ |
-| muscles/hamstrings.jpg | https://www.pexels.com/photo/40105328/ |
-| muscles/glutes.jpg | https://www.pexels.com/photo/13122465/ (Gabrielle Durant) |
-| muscles/calves.jpg | https://www.pexels.com/photo/13965339/ (Amar Preciado) |
-| muscles/core.jpg | https://www.pexels.com/photo/12966655/ |
 | sports/basketball.jpg | https://www.pexels.com/photo/2834914/ (Wallace Chuck) |
 | sports/soccer.jpg | https://www.pexels.com/photo/30585659/ |
 | sports/american_football.jpg | https://www.pexels.com/photo/1568874/ (John Torcasio) |

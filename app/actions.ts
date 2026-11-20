@@ -4,7 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { analyzeFoodPhoto, suggestSwap, tunePlan } from "@/lib/ai";
 import { buildSchedule } from "@/lib/dates";
 import { EXERCISE_BY_ID } from "@/lib/exercises";
-import { generatePlan, prescribe, swapCandidates } from "@/lib/generate";
+import { fitToTime, generatePlan, prescribe, swapCandidates } from "@/lib/generate";
 import { headers } from "next/headers";
 import { FREE_SCANS, isPremiumStatus } from "@/lib/premium";
 import { getPremiumPriceId, getStripe } from "@/lib/stripe";
@@ -71,6 +71,7 @@ export async function generatePlanAction(today: string): Promise<Result<{ aiNote
         const sane = a.sets >= 1 && a.sets <= 8 && a.rest_sec >= 0 && a.rest_sec <= 600 && a.reps.length > 0 && a.reps.length <= 30;
         if (target && sane) Object.assign(target, { sets: a.sets, reps: a.reps, rest_sec: a.rest_sec });
       }
+      for (const d of days) d.exercises = fitToTime(d.exercises); // AI tweaks must still fit in an hour
     } catch (e) {
       aiNote = `Saved the rule-based plan without AI tuning: ${aiError(e)}`;
     }

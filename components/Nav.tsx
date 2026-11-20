@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import Logo from "@/components/Logo";
 
 const LINKS = [
   { href: "/", label: "Today" },
@@ -12,7 +13,8 @@ const LINKS = [
   { href: "/profile", label: "Profile" },
   { href: "/premium", label: "Premium" },
 ];
-const NO_NAV = ["/login", "/signup", "/forgot-password", "/reset-password", "/choose-plan"];
+// Pages without the tab bar: signed-out pages, the plan choice, and building the first plan.
+const NO_NAV = ["/login", "/signup", "/forgot-password", "/reset-password", "/choose-plan", "/onboarding"];
 
 export default function Nav() {
   const path = usePathname();
@@ -28,9 +30,7 @@ export default function Nav() {
   return (
     <header className="bg-twilight text-white">
       <nav className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-1 gap-y-2 px-4 py-3">
-        <span className="mr-3 text-lg font-bold">
-          Gym<span className="text-surf">Nado</span>
-        </span>
+        <Logo size={28} dark className="mr-3 text-lg" />
         {LINKS.map((l) => (
           <Link
             key={l.href}

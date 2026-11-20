@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { fadeOutMs, wait } from "@/lib/motion";
 import { createClient } from "@/lib/supabase/client";
+import Logo from "@/components/Logo";
 
 // The emailed reset link lands here with a one-time code; the Supabase browser client
 // exchanges it for a session on load, then the user picks a new password.
@@ -39,9 +40,7 @@ export default function ResetPasswordPage() {
 
   return (
     <div className={`mx-auto mt-10 max-w-sm ${leaving ? "fade-out" : ""}`}>
-      <h1 className="mb-1 text-center text-3xl font-bold">
-        Gym<span className="text-teal">Nado</span>
-      </h1>
+      <h1 className="mb-1 flex justify-center text-3xl"><Logo size={44} /></h1>
       <p className="mb-6 text-center text-twilight/70">Choose a new password.</p>
       {linkValid === null ? (
         <p className="text-center text-twilight/60">Checking your link…</p>
