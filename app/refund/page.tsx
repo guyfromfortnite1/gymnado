@@ -9,7 +9,7 @@ export default function RefundPage() {
   return (
     <LegalPage title="Refund Policy">
       <h2>Cancel anytime</h2>
-      <p>{SITE_NAME} Premium ({PREMIUM_PRICE_LABEL}) renews monthly. You can cancel anytime on the Premium tab under &quot;Manage or cancel subscription&quot;. After you cancel, you keep Premium until the end of the month you&apos;ve already paid for, and you won&apos;t be charged again.</p>
+      <p>{SITE_NAME} Premium ({PREMIUM_PRICE_LABEL}) renews monthly. You can cancel anytime in Settings → Premium under &quot;Manage or cancel subscription&quot;. After you cancel, you keep Premium until the end of the month you&apos;ve already paid for, and you won&apos;t be charged again.</p>
 
       <h2>Refunds</h2>
       <p>Because you can cancel at any time and keep access until the end of your paid period, we don&apos;t usually give refunds for partial months.</p>

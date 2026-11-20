@@ -1,7 +1,7 @@
 import Link from "next/link";
 import PremiumSurface, { PremiumBadge } from "@/components/PremiumSurface";
 
-/** Shown in place of a Premium feature for free users. The whole panel opens the Premium tab. */
+/** Shown in place of a Premium feature for free users. The whole panel opens the Premium page. */
 export default function PremiumLock({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
     <Link href="/premium" className="group block rounded-2xl transition duration-200 hover:scale-[1.02]">

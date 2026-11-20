@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 type InstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 
 /** "Install GymNado" card: a button where the browser supports it, Share-menu steps on iPhone/iPad. Hidden once installed. */
-export default function InstallCard() {
+export default function InstallCard({ className = "card" }: { className?: string }) {
   const [installed, setInstalled] = useState(true);
   const [ios, setIos] = useState(false);
   const [prompt, setPrompt] = useState<InstallPromptEvent | null>(null);
@@ -39,7 +39,7 @@ export default function InstallCard() {
   }
 
   return (
-    <section className="card flex flex-wrap items-center gap-3">
+    <section className={`flex flex-wrap items-center gap-3 ${className}`}>
       <span className="text-3xl" aria-hidden>📲</span>
       <div className="min-w-0 flex-1">
         <p className="font-semibold">Install GymNado</p>

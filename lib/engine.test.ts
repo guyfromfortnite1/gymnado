@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { chooseSplit } from "./splits";
-import { estimateMinutes, fitToTime, generatePlan, MAX_EXERCISES, MAX_SESSION_MIN, MAX_SETS } from "./generate";
+import { estimateMinutes, fitToTime, generatePlan, SESSION_LIMITS } from "./generate";
 import { EXERCISE_BY_ID, EXERCISES } from "./exercises";
 import { dailyTargets } from "./macros";
 import { cmToFtIn, ftInToCm, kgToLb, lbToKg } from "./units";
@@ -39,7 +39,7 @@ describe("generatePlan", () => {
     for (const d of plan.days) {
       const ids = d.exercises.map((e) => e.exercise_id);
       expect(new Set(ids).size).toBe(ids.length);
-      expect(ids.length).toBeGreaterThanOrEqual(5);
+      expect(ids.length).toBeGreaterThanOrEqual(3);
     }
   });
 
@@ -68,19 +68,19 @@ describe("generatePlan", () => {
     for (const d of plan.days) expect(d.exercises.some((e) => EXERCISE_BY_ID[e.exercise_id].sports.includes(sport))).toBe(true);
   });
 
-  it("adds work for every chosen sport when several are picked", () => {
+  it("works every chosen sport into the week when several are picked", () => {
     const sports: Sport[] = ["basketball", "boxing", "running"];
     const plan = generatePlan({ ...base, sports });
-    for (const d of plan.days) {
-      for (const s of sports) expect(d.exercises.some((e) => EXERCISE_BY_ID[e.exercise_id].sports.includes(s))).toBe(true);
-    }
+    const hasSport = (d: { exercises: { exercise_id: string }[] }, s: Sport) => d.exercises.some((e) => EXERCISE_BY_ID[e.exercise_id].sports.includes(s));
+    for (const d of plan.days) expect(sports.some((s) => hasSport(d, s))).toBe(true);
+    for (const s of sports) expect(plan.days.some((d) => hasSport(d, s))).toBe(true);
   });
 
   it("applies goal rep schemes: strength compounds are heavy, lean gets a finisher", () => {
     const strength = generatePlan({ ...base, physique_goal: "strength" });
     const firstCompound = strength.days[0].exercises.find((e) => EXERCISE_BY_ID[e.exercise_id].category === "compound")!;
     expect(firstCompound.reps).toBe("3-5");
-    expect(firstCompound.rest_sec).toBe(150);
+    expect(firstCompound.rest_sec).toBe(120);
 
     const lean = generatePlan({ ...base, physique_goal: "lean" });
     for (const d of lean.days) expect(EXERCISE_BY_ID[d.exercises.at(-1)!.exercise_id].category).toBe("conditioning");
@@ -96,9 +96,10 @@ describe("generatePlan", () => {
           for (const sports of [[], ["boxing", "running", "tennis"]] as Sport[][]) {
             const plan = generatePlan({ ...base, physique_goal, experience, training_days, sports, target_muscles: ["chest", "biceps", "glutes"] });
             for (const d of plan.days) {
-              expect(estimateMinutes(d.exercises)).toBeLessThanOrEqual(MAX_SESSION_MIN);
-              expect(d.exercises.length).toBeLessThanOrEqual(MAX_EXERCISES);
-              expect(d.exercises.reduce((n, e) => n + (EXERCISE_BY_ID[e.exercise_id].category === "conditioning" ? 0 : e.sets), 0)).toBeLessThanOrEqual(MAX_SETS);
+              const limit = SESSION_LIMITS[experience];
+              expect(estimateMinutes(d.exercises)).toBeLessThanOrEqual(limit.minutes);
+              expect(d.exercises.length).toBeLessThanOrEqual(limit.exercises);
+              expect(d.exercises.reduce((n, e) => n + (EXERCISE_BY_ID[e.exercise_id].category === "conditioning" ? 0 : e.sets), 0)).toBeLessThanOrEqual(limit.sets);
               expect(d.exercises.length).toBeGreaterThanOrEqual(3);
             }
           }
@@ -107,10 +108,20 @@ describe("generatePlan", () => {
     }
   });
 
+  it("gives beginners shorter days than advanced lifters", () => {
+    const avgMinutes = (experience: "beginner" | "advanced") => {
+      const days = generatePlan({ ...base, experience, training_days: [1, 2, 4, 5] }).days;
+      return days.reduce((n, d) => n + estimateMinutes(d.exercises), 0) / days.length;
+    };
+    expect(avgMinutes("beginner")).toBeLessThan(avgMinutes("advanced"));
+    expect(avgMinutes("beginner")).toBeLessThanOrEqual(30);
+  });
+
   it("fitToTime trims sets before dropping exercises", () => {
     const long = Array.from({ length: 8 }, (_, i) => ({ exercise_id: EXERCISES.filter((e) => e.category === "isolation" && !e.sports.length)[i].id, sets: 5, reps: "10", rest_sec: 90 }));
     const fitted = fitToTime(long);
-    expect(estimateMinutes(fitted)).toBeLessThanOrEqual(MAX_SESSION_MIN);
+    expect(estimateMinutes(fitted)).toBeLessThanOrEqual(SESSION_LIMITS.intermediate.minutes);
+    expect(fitted.length).toBeLessThanOrEqual(SESSION_LIMITS.intermediate.exercises);
     expect(fitted.every((x) => x.sets <= 3)).toBe(true);
   });
 

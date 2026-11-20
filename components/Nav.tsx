@@ -1,20 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Logo from "@/components/Logo";
-import ThemeToggle from "@/components/ThemeToggle";
 import { useScanStatus } from "@/lib/hooks";
-import { createClient } from "@/lib/supabase/client";
 
 const FREE_TABS = [
   { href: "/", label: "Today" },
   { href: "/plan", label: "Plan" },
   { href: "/schedule", label: "Schedule" },
   { href: "/food", label: "Food" },
-  { href: "/profile", label: "Profile" },
 ];
-// Premium-only tabs; free users who tap one go to the Premium tab instead.
+// Premium-only tabs; free users who tap one go to the Premium page instead.
 const PREMIUM_TABS = [
   { href: "/progress", label: "Progress" },
   { href: "/coach", label: "Coach" },
@@ -46,25 +43,41 @@ function TabGroup({ children, className = "" }: { children: React.ReactNode; cla
   return <div className={`flex divide-x divide-white/15 overflow-hidden rounded-xl border border-white/15 ${className}`}>{children}</div>;
 }
 
+function IconLink({ href, label, active, children }: { href: string; label: string; active: boolean; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      title={label}
+      className={`flex h-9 w-9 items-center justify-center rounded-full transition hover:scale-110 ${active ? "bg-teal text-white" : "text-ice/85 hover:bg-white/10 hover:text-white"}`}
+    >
+      {children}
+    </Link>
+  );
+}
+
 function NavBar({ path }: { path: string }) {
-  const router = useRouter();
   const { status } = useScanStatus();
   const premium = !!status?.premium;
-
-  async function signOut() {
-    await createClient().auth.signOut();
-    router.replace("/login");
-    router.refresh();
-  }
 
   return (
     <header className="bg-navy text-white">
       <div className="mx-auto max-w-3xl space-y-2 px-4 py-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Link href="/" aria-label="GymNado home"><Logo size={22} dark /></Link>
           <span className="flex-1" />
-          <ThemeToggle />
-          <button onClick={signOut} className="shrink-0 whitespace-nowrap rounded-lg px-3 py-1 text-sm text-ice/80 hover:bg-white/10">Sign out</button>
+          <IconLink href="/profile" label="Profile" active={path === "/profile"}>
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
+            </svg>
+          </IconLink>
+          <IconLink href="/settings" label="Settings" active={path === "/settings"}>
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
+            </svg>
+          </IconLink>
         </div>
         <nav className="flex flex-wrap items-center gap-2" aria-label="Main">
           <TabGroup>
@@ -77,7 +90,6 @@ function NavBar({ path }: { path: string }) {
                 <span aria-hidden>💎 </span>{t.label}
               </Tab>
             ))}
-            <Tab href="/premium" active={path === "/premium"}>{premium ? "Premium" : "Go Premium"}</Tab>
           </TabGroup>
         </nav>
       </div>

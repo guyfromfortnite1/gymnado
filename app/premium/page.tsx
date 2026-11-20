@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { manageBillingAction, startCheckoutAction } from "@/app/actions";
 import { useScanStatus } from "@/lib/hooks";
-import { FREE_SCANS, PREMIUM_PRICE_LABEL } from "@/lib/premium";
+import { PREMIUM_PRICE_LABEL } from "@/lib/premium";
 import { PageSkeleton } from "@/components/Skeleton";
 
 export default function PremiumPage() {
@@ -73,9 +73,6 @@ export default function PremiumPage() {
             <li>✓ Progress tracking, charts and personal records</li>
             <li>✓ Meal ideas that fit your macros</li>
           </ul>
-          <p className="rounded-lg bg-cyan p-3 text-sm">
-            You&apos;ve used {Math.min(status.used, FREE_SCANS)} of your {FREE_SCANS} free scans.
-          </p>
           <button className="btn w-full py-3 text-lg" onClick={() => go(() => startCheckoutAction())} disabled={busy}>
             {busy ? "Opening checkout…" : `Upgrade for ${PREMIUM_PRICE_LABEL}`}
           </button>

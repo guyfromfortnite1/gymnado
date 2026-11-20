@@ -6,6 +6,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { fadeOutMs, wait } from "@/lib/motion";
 import { isPremiumStatus } from "@/lib/premium";
+import InstallCard from "@/components/InstallCard";
 import Logo from "@/components/Logo";
 
 export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
@@ -67,6 +68,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
           {isLogin ? "Create an account" : "Log in"}
         </Link>
       </p>
+      {isLogin && <InstallCard className="card mt-6" />}
       <p className="mt-6 text-center text-xs text-twilight/50">
         {!isLogin && "By creating an account you agree to our "}
         <Link className="underline" href="/terms">Terms</Link>{isLogin ? " · " : " and "}

@@ -102,7 +102,7 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
     return () => window.removeEventListener("focus", reloadPremium);
   }, [reloadPremium]);
 
-  // Keep unfinished answers in this browser tab, so leaving for the Premium tab (or a reload) doesn't lose them.
+  // Keep unfinished answers in this browser tab, so leaving for the Premium page (or a reload) doesn't lose them.
   useEffect(() => {
     try {
       const d = JSON.parse(sessionStorage.getItem(DRAFT_KEY) ?? "null");
@@ -266,7 +266,7 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
     },
     {
       title: "Do you play any sports?",
-      hint: premium ? "Optional. Pick as many as you like. Each one adds a sport-specific exercise to every workout." : undefined,
+      hint: premium ? "Optional. Pick as many as you like. Sport-specific work is rotated through your week." : undefined,
       body: !premium ? (
         <PremiumLock title="Build a physique for your sport">
           Premium adds sport-specific exercises to every workout, for basketball, soccer, boxing, running, tennis and more.
