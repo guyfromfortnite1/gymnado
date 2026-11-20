@@ -23,5 +23,5 @@ export default function PremiumSurface({ className = "", children }: { className
 }
 
 export function PremiumBadge() {
-  return <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold text-cyan ring-1 ring-cyan/40">💎 Premium</span>;
+  return <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold text-ice ring-1 ring-ice/40">💎 Premium</span>;
 }

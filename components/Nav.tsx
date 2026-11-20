@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Logo from "@/components/Logo";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const LINKS = [
   { href: "/", label: "Today" },
@@ -30,7 +31,7 @@ export default function Nav() {
   }
 
   return (
-    <header className="bg-twilight text-white">
+    <header className="bg-navy text-white">
       <nav className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-1 gap-y-2 px-4 py-3">
         <Logo size={28} dark className="mr-3 text-lg" />
         {LINKS.map((l) => (
@@ -42,7 +43,9 @@ export default function Nav() {
             {l.label}
           </Link>
         ))}
-        <button onClick={signOut} className="ml-auto rounded-lg px-3 py-1 text-sm text-frost hover:bg-white/10">
+        <span className="ml-auto" />
+        <ThemeToggle />
+        <button onClick={signOut} className="rounded-lg px-3 py-1 text-sm text-ice/80 hover:bg-white/10">
           Sign out
         </button>
       </nav>

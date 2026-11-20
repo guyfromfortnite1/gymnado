@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import InstallCard from "@/components/InstallCard";
 import ProfileForm from "@/components/ProfileForm";
 import { generatePlanAction } from "@/app/actions";
 import { todayLocal } from "@/lib/dates";
@@ -27,6 +28,7 @@ export default function ProfilePage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Profile</h1>
+      <InstallCard />
       {saved && (
         <div className="card flex flex-wrap items-center gap-3 border-surf">
           <p className="flex-1">Saved. Rebuild your plan with the new settings? Upcoming workouts will be replaced; completed ones are kept.</p>

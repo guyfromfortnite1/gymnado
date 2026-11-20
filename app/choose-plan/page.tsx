@@ -75,7 +75,7 @@ export default function ChoosePlanPage() {
               </p>
               <p className="text-3xl font-bold">
                 {PREMIUM_PRICE_LABEL.replace("/month", "")}
-                <span className="text-base font-normal text-cyan/80"> / month</span>
+                <span className="text-base font-normal text-ice/80"> / month</span>
               </p>
             </div>
             <PremiumBadge />
@@ -89,7 +89,7 @@ export default function ChoosePlanPage() {
             <li>✓ Meal ideas that fit your macros</li>
             <li>✓ Cancel anytime</li>
           </ul>
-          <button className="w-full rounded-xl bg-white py-3 font-semibold text-twilight transition hover:bg-cyan disabled:opacity-60" onClick={choosePremium} disabled={!!busy}>
+          <button className="w-full rounded-xl bg-white py-3 font-semibold text-navy transition hover:bg-cyan disabled:opacity-60" onClick={choosePremium} disabled={!!busy}>
             {busy === "premium" ? "Opening checkout…" : "Go Premium"}
           </button>
         </PremiumSurface>

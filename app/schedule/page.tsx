@@ -12,9 +12,9 @@ import { PageSkeleton } from "@/components/Skeleton";
 export type Workout = { id: string; date: string; status: "planned" | "done" | "skipped"; plan_days: { name: string; exercises: PlanExercise[] } };
 
 const STATUS_STYLE = {
-  planned: "border-frost bg-white",
+  planned: "border-frost bg-surface",
   done: "border-frost bg-frost/60",
-  skipped: "border-frost bg-white opacity-60 line-through",
+  skipped: "border-frost bg-surface opacity-60 line-through",
 };
 
 export default function SchedulePage() {

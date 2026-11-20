@@ -18,7 +18,7 @@ export const formatSets = (e: PlanExercise) => (e.sets === 1 ? e.reps : `${e.set
 export function ExerciseThumb({ id, className = "h-14 w-14" }: { id: string; className?: string }) {
   const e = EXERCISE_BY_ID[id];
   return (
-    <div className={`shrink-0 overflow-hidden rounded-lg border border-frost bg-white ${className}`}>
+    <div className={`shrink-0 overflow-hidden rounded-lg border border-frost bg-surface ${className}`}>
       {EXERCISE_IMAGE_IDS.has(id) ? (
         <Image src={`/exercises/${id}.jpg`} alt="" width={160} height={160} className="h-full w-full object-cover" />
       ) : (

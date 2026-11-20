@@ -4,8 +4,11 @@ import { useState } from "react";
 
 // Small single-series SVG charts for the Progress page. One series each, so no legend:
 // the card title names it. Hover/focus shows a tooltip; every chart has a table view.
-const SERIES = "#0077b6"; // validated against the light surface (dataviz validator: all checks pass)
-const GRID = "#e3f6fb";
+// Theme colors (flip in dark mode). Series = teal, validated against the light surface (dataviz validator: all checks pass).
+const SERIES = "var(--color-teal)";
+const GRID = "var(--color-cyan)";
+const INK = "var(--color-twilight)";
+const SURFACE = "var(--color-surface)";
 const W = 600, H = 220, PAD = { l: 44, r: 16, t: 16, b: 28 };
 
 export type Point = { label: string; value: number };
@@ -66,24 +69,24 @@ export function LineChart({ points, unit, valueLabel }: { points: Point[]; unit:
           onPointerMove={onMove} onPointerLeave={() => setHover(null)} onKeyDown={onKey} onBlur={() => setHover(null)}>
           {ticks.map((t) => (
             <g key={t}>
-              <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} stroke={GRID} strokeWidth={1} />
+              <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} style={{ stroke: GRID }} strokeWidth={1} />
               <text x={PAD.l - 8} y={y(t) + 4} textAnchor="end" className="fill-twilight/60 text-[11px]">{Math.round(t)}</text>
             </g>
           ))}
           <text x={x(0)} y={H - 8} textAnchor="start" className="fill-twilight/60 text-[11px]">{points[0].label}</text>
           {last > 0 && <text x={x(last)} y={H - 8} textAnchor="end" className="fill-twilight/60 text-[11px]">{points[last].label}</text>}
-          {h !== null && <line x1={x(h)} x2={x(h)} y1={PAD.t} y2={H - PAD.b} stroke="#03045e" strokeOpacity={0.25} strokeWidth={1} />}
-          <path d={path} fill="none" stroke={SERIES} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          {h !== null && <line x1={x(h)} x2={x(h)} y1={PAD.t} y2={H - PAD.b} style={{ stroke: INK }} strokeOpacity={0.25} strokeWidth={1} />}
+          <path d={path} fill="none" style={{ stroke: SERIES }} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
           {points.map((p, i) => (
-            <circle key={i} cx={x(i)} cy={y(p.value)} r={h === i ? 6 : 4} fill={SERIES} stroke="white" strokeWidth={2} />
+            <circle key={i} cx={x(i)} cy={y(p.value)} r={h === i ? 6 : 4} style={{ fill: SERIES, stroke: SURFACE }} strokeWidth={2} />
           ))}
           {/* Direct label on the latest value only. */}
-          <text x={x(last)} y={y(points[last].value) - 12} textAnchor={last > 0 ? "end" : "middle"} className="fill-twilight text-[12px] font-semibold" stroke="white" strokeWidth={4} paintOrder="stroke">
+          <text x={x(last)} y={y(points[last].value) - 12} textAnchor={last > 0 ? "end" : "middle"} className="fill-twilight text-[12px] font-semibold" style={{ stroke: SURFACE }} strokeWidth={4} paintOrder="stroke">
             {points[last].value} {unit}
           </text>
         </svg>
         {h !== null && (
-          <div className="pointer-events-none absolute top-0 rounded-lg border border-frost bg-white px-2 py-1 text-xs shadow"
+          <div className="pointer-events-none absolute top-0 rounded-lg border border-frost bg-surface px-2 py-1 text-xs shadow"
             style={{ left: `${(x(h) / W) * 100}%`, transform: `translateX(${h > last / 2 ? "-105%" : "5%"})` }}>
             <div className="font-semibold text-twilight">{points[h].value} {unit}</div>
             <div className="text-twilight/60">{points[h].label}</div>
@@ -110,7 +113,7 @@ export function BarChart({ points, unit, valueLabel }: { points: Point[]; unit: 
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={`${valueLabel} per week`}>
           {[0, Math.round(hi / 2), hi].map((t) => (
             <g key={t}>
-              <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} stroke={GRID} strokeWidth={1} />
+              <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} style={{ stroke: GRID }} strokeWidth={1} />
               <text x={PAD.l - 8} y={y(t) + 4} textAnchor="end" className="fill-twilight/60 text-[11px]">{t}</text>
             </g>
           ))}
@@ -123,17 +126,17 @@ export function BarChart({ points, unit, valueLabel }: { points: Point[]; unit: 
                 <rect x={PAD.l + i * slot} y={PAD.t} width={slot} height={base - PAD.t} fill="transparent" />
                 {p.value > 0 && (
                   <path d={`M${bx},${base} V${top + r} Q${bx},${top} ${bx + r},${top} H${bx + bw - r} Q${bx + bw},${top} ${bx + bw},${top + r} V${base} Z`}
-                    fill={SERIES} opacity={hover === null || hover === i ? 1 : 0.55} />
+                    style={{ fill: SERIES }} opacity={hover === null || hover === i ? 1 : 0.55} />
                 )}
               </g>
             );
           })}
-          <line x1={PAD.l} x2={W - PAD.r} y1={base} y2={base} stroke="#03045e" strokeOpacity={0.2} />
+          <line x1={PAD.l} x2={W - PAD.r} y1={base} y2={base} style={{ stroke: INK }} strokeOpacity={0.2} />
           <text x={PAD.l} y={H - 8} className="fill-twilight/60 text-[11px]">{points[0].label}</text>
           <text x={W - PAD.r} y={H - 8} textAnchor="end" className="fill-twilight/60 text-[11px]">{points.at(-1)!.label}</text>
         </svg>
         {hover !== null && (
-          <div className="pointer-events-none absolute top-0 rounded-lg border border-frost bg-white px-2 py-1 text-xs shadow"
+          <div className="pointer-events-none absolute top-0 rounded-lg border border-frost bg-surface px-2 py-1 text-xs shadow"
             style={{ left: `${((PAD.l + (hover + 0.5) * slot) / W) * 100}%`, transform: `translateX(${hover > points.length / 2 ? "-105%" : "5%"})` }}>
             <div className="font-semibold text-twilight">{points[hover].value} {unit}</div>
             <div className="text-twilight/60">Week of {points[hover].label}</div>

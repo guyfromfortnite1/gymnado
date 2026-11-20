@@ -6,32 +6,50 @@
   --color-surf: #00b4d8;     /* turquoise-surf: accents, progress, today */
   --color-frost: #90e0ef;    /* frosted-blue: borders, secondary, done */
   --color-cyan: #caf0f8;     /* light-cyan: backgrounds */
+  --color-surface: #ffffff;  /* cards, inputs */
+  --color-page: #f3fcfe;     /* page background */
+  /* Fixed brand colors that don't flip in dark mode (nav bar, Premium panels). */
+  --color-navy: #03045e;
+  --color-ice: #caf0f8;
   --font-sans: var(--font-geist-sans);
 }
 
+/* Dark mode: html.dark (set before paint by the script in app/layout.tsx). Same names, dark values. */
+.dark {
+  color-scheme: dark;
+  --color-twilight: #e6f6fb;
+  --color-teal: #2b95d6;
+  --color-surf: #22c3e6;
+  --color-frost: #24407e;
+  --color-cyan: #13306a;
+  --color-surface: #0c1849;
+  --color-page: #060d33;
+  --color-navy: #020524;
+}
+
 body {
-  background: #f3fcfe;
+  background: var(--color-page);
   color: var(--color-twilight);
 }
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-frost bg-white p-4 shadow-sm;
+    @apply rounded-2xl border border-frost bg-surface p-4 shadow-sm;
   }
   .btn {
-    @apply inline-flex items-center justify-center rounded-xl bg-teal px-4 py-2 font-medium text-white transition hover:bg-twilight disabled:opacity-50;
+    @apply inline-flex items-center justify-center rounded-xl bg-teal px-4 py-2 font-medium text-white transition hover:bg-navy disabled:opacity-50;
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center rounded-xl border border-frost bg-cyan px-4 py-2 font-medium text-twilight transition hover:bg-frost disabled:opacity-50;
   }
   .input {
-    @apply w-full rounded-xl border border-frost bg-white px-3 py-2 text-twilight outline-none focus:border-surf focus:ring-2 focus:ring-cyan;
+    @apply w-full rounded-xl border border-frost bg-surface px-3 py-2 text-twilight outline-none focus:border-surf focus:ring-2 focus:ring-cyan;
   }
   .label {
     @apply mb-1 block text-sm font-medium text-twilight;
   }
   .chip {
-    @apply cursor-pointer rounded-full border border-frost bg-white px-3 py-1 text-sm text-twilight transition duration-200 hover:scale-110 hover:shadow-sm;
+    @apply cursor-pointer rounded-full border border-frost bg-surface px-3 py-1 text-sm text-twilight transition duration-200 hover:scale-110 hover:shadow-sm;
   }
   .chip-on {
     @apply border-teal bg-teal text-white;
@@ -54,7 +72,7 @@ body {
 
 /* Loading placeholders (components/Skeleton.tsx): a soft light sweep over pale blue. */
 .skeleton {
-  background: linear-gradient(90deg, #e3f6fb 25%, #f3fcfe 50%, #e3f6fb 75%);
+  background: linear-gradient(90deg, var(--color-cyan) 25%, var(--color-page) 50%, var(--color-cyan) 75%);
   background-size: 200% 100%;
   animation: skeleton-sweep 1.4s ease-in-out infinite;
 }

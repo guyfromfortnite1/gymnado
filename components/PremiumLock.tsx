@@ -7,8 +7,8 @@ export default function PremiumLock({ title, children, className = "" }: { title
     <PremiumSurface className={`space-y-3 ${className}`}>
       <PremiumBadge />
       <p className="text-lg font-semibold">{title}</p>
-      <div className="text-sm text-cyan/90">{children}</div>
-      <Link href="/premium" className="inline-flex rounded-xl bg-white px-4 py-2 font-semibold text-twilight transition duration-200 hover:scale-105 hover:bg-cyan">
+      <div className="text-sm text-ice/90">{children}</div>
+      <Link href="/premium" className="inline-flex rounded-xl bg-white px-4 py-2 font-semibold text-navy transition duration-200 hover:scale-105 hover:bg-ice">
         Upgrade to unlock
       </Link>
     </PremiumSurface>

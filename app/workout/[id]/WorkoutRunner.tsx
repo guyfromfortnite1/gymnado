@@ -194,8 +194,8 @@ function RestRing({ left, total }: { left: number; total: number }) {
   return (
     <div className="relative h-44 w-44">
       <svg viewBox="0 0 160 160" className="h-full w-full -rotate-90">
-        <circle cx="80" cy="80" r={r} fill="none" stroke="#caf0f8" strokeWidth="10" />
-        <circle cx="80" cy="80" r={r} fill="none" stroke="#00b4d8" strokeWidth="10" strokeLinecap="round"
+        <circle cx="80" cy="80" r={r} fill="none" style={{ stroke: "var(--color-cyan)" }} strokeWidth="10" />
+        <circle cx="80" cy="80" r={r} fill="none" style={{ stroke: "var(--color-surf)" }} strokeWidth="10" strokeLinecap="round"
           strokeDasharray={c} strokeDashoffset={c * (1 - left / total)} className="transition-[stroke-dashoffset] duration-1000 ease-linear" />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center text-4xl font-bold tabular-nums">

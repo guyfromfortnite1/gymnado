@@ -43,10 +43,10 @@ function Option({ on, onClick, label, blurb }: { on: boolean; onClick: () => voi
       type="button"
       onClick={onClick}
       aria-pressed={on}
-      className={`w-full rounded-xl border p-3 text-left transition duration-200 hover:scale-[1.03] hover:shadow-md ${on ? "border-teal bg-teal text-white" : "border-frost bg-white hover:bg-cyan"}`}
+      className={`w-full rounded-xl border p-3 text-left transition duration-200 hover:scale-[1.03] hover:shadow-md ${on ? "border-teal bg-teal text-white" : "border-frost bg-surface hover:bg-cyan"}`}
     >
       <div className="font-semibold">{label}</div>
-      {blurb && <div className={`text-sm ${on ? "text-cyan" : "text-twilight/60"}`}>{blurb}</div>}
+      {blurb && <div className={`text-sm ${on ? "text-ice" : "text-twilight/60"}`}>{blurb}</div>}
     </button>
   );
 }
@@ -61,11 +61,11 @@ function PhotoCard({ src, muscle, label, on, onClick }: { src?: string; muscle?:
       className={`relative overflow-hidden rounded-xl border-2 text-left transition duration-200 hover:z-10 hover:scale-105 hover:shadow-lg ${on ? "border-teal" : "border-frost hover:border-surf"}`}
     >
       {muscle ? (
-        <MuscleMap muscles={[muscle]} className={`h-24 py-1 ${on ? "bg-cyan" : "bg-white"}`} />
+        <MuscleMap muscles={[muscle]} className={`h-24 py-1 ${on ? "bg-cyan" : "bg-surface"}`} />
       ) : (
         <Image src={src!} alt="" width={240} height={180} className="h-24 w-full object-cover" />
       )}
-      <span className={`block px-2 py-1 text-sm font-semibold ${on ? "bg-teal text-white" : "bg-white text-twilight"}`}>{label}</span>
+      <span className={`block px-2 py-1 text-sm font-semibold ${on ? "bg-teal text-white" : "bg-surface text-twilight"}`}>{label}</span>
       {on && <span className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-teal text-sm text-white shadow" aria-hidden>✓</span>}
     </button>
   );
@@ -252,13 +252,13 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
         <PremiumSurface className="space-y-3">
           <PremiumBadge />
           <p className="text-lg font-semibold">Build a physique for your sport</p>
-          <p className="text-sm text-cyan/90">
+          <p className="text-sm text-ice/90">
             Premium adds sport-specific exercises to every workout, for basketball, soccer, boxing, running, tennis and more.
           </p>
-          <a href="/premium" target="_blank" rel="noopener" className="inline-flex rounded-xl bg-white px-4 py-2 font-semibold text-twilight transition hover:bg-cyan">
+          <a href="/premium" target="_blank" rel="noopener" className="inline-flex rounded-xl bg-white px-4 py-2 font-semibold text-navy transition hover:bg-ice">
             Upgrade to unlock
           </a>
-          <p className="text-xs text-cyan/70">Opens in a new tab so you keep your answers. Or finish below without it.</p>
+          <p className="text-xs text-ice/70">Opens in a new tab so you keep your answers. Or finish below without it.</p>
         </PremiumSurface>
       ) : (
         <div className="space-y-3">

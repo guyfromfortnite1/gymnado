@@ -204,7 +204,7 @@ export default function FoodPage() {
               {/* eslint-disable-next-line @next/next/no-img-element -- local data URL preview */}
               <img src={photo} alt="Meal preview" className={`block max-h-72 transition ${scanning ? "brightness-90" : ""}`} />
               {scanning && (
-                <div className="scan-grid absolute inset-0 bg-twilight/20" aria-hidden>
+                <div className="scan-grid absolute inset-0 bg-navy/20" aria-hidden>
                   <div className="scan-line" />
                 </div>
               )}
