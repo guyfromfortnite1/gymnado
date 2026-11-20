@@ -31,14 +31,6 @@ const pickOne = (v: unknown) => (v ? null : "Please pick an option to continue."
 
 const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
-function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button type="button" onClick={onClick} className={`chip ${on ? "chip-on" : "hover:bg-cyan"}`} aria-pressed={on}>
-      {children}
-    </button>
-  );
-}
-
 /** A large single-choice answer card. */
 function Option({ on, onClick, label, blurb }: { on: boolean; onClick: () => void; label: string; blurb?: string }) {
   return (
@@ -267,12 +259,22 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
       title: "Any equipment you DON'T have?",
       hint: "We assume a full gym. Tap anything that's missing and we'll skip exercises that need it.",
       body: (
-        <div className="flex flex-wrap gap-2">
-          {(Object.keys(EQUIPMENT) as Equipment[]).map((k) => (
-            <Chip key={k} on={p.missing_equipment.includes(k)} onClick={() => set("missing_equipment", toggle(p.missing_equipment, k))}>
-              {p.missing_equipment.includes(k) ? "✕ " : ""}{EQUIPMENT[k]}
-            </Chip>
-          ))}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {(Object.keys(EQUIPMENT) as Equipment[]).map((k) => {
+            const missing = p.missing_equipment.includes(k);
+            return (
+              <button
+                key={k}
+                type="button"
+                aria-pressed={missing}
+                onClick={() => set("missing_equipment", toggle(p.missing_equipment, k))}
+                className={`flex min-h-14 items-center gap-2 rounded-xl border-2 px-3 py-2 text-left font-medium transition duration-200 hover:scale-105 hover:shadow-md ${missing ? "border-teal bg-accent text-accent-ink" : "border-frost bg-surface text-twilight hover:border-surf"}`}
+              >
+                <span className="w-5 shrink-0 text-center text-lg" aria-hidden>{missing ? "✕" : "✓"}</span>
+                <span className={missing ? "line-through decoration-2" : ""}>{EQUIPMENT[k]}</span>
+              </button>
+            );
+          })}
         </div>
       ),
     },

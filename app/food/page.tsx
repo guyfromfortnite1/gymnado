@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import MacroBars from "@/components/MacroBars";
-import { analyzeFoodAction, mealIdeasAction } from "@/app/actions";
+import { mealIdeasAction } from "@/app/actions";
 import PremiumLock from "@/components/PremiumLock";
 import type { MealIdea } from "@/lib/ai";
+import { EMPTY_ITEM, resizeImage, setPendingMeal } from "@/lib/food";
 import { dailyTargets, sumMacros } from "@/lib/macros";
-import { wait } from "@/lib/motion";
 import { FREE_SCANS, PREMIUM_PRICE_LABEL } from "@/lib/premium";
 import { createClient } from "@/lib/supabase/client";
 import { useProfile, useScanStatus, useToday } from "@/lib/hooks";
@@ -16,61 +17,19 @@ import { PageSkeleton } from "@/components/Skeleton";
 
 type Meal = { id: string; items: FoodItem[]; calories: number; protein_g: number; carbs_g: number; fat_g: number; created_at: string };
 
-const NUM_FIELDS = [
-  ["calories", "kcal"],
-  ["protein_g", "P (g)"],
-  ["carbs_g", "C (g)"],
-  ["fat_g", "F (g)"],
-] as const;
-const EMPTY: FoodItem = { name: "", portion: "", calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
-
-/** Shrink the photo in the browser (max 1024 px, JPEG) so uploads are small and fast. */
-function resizeImage(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const scale = Math.min(1, 1024 / Math.max(img.width, img.height));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(img.src);
-      resolve(canvas.toDataURL("image/jpeg", 0.8));
-    };
-    img.onerror = () => reject(new Error("Couldn't read that image."));
-    img.src = URL.createObjectURL(file);
-  });
-}
-
+/** Food tab: today's macros, meal ideas and meals. Scanning and editing a meal happen on /food/log. */
 export default function FoodPage() {
+  const router = useRouter();
   const profile = useProfile();
   const today = useToday();
   const [meals, setMeals] = useState<Meal[]>([]);
-  const [photo, setPhoto] = useState<string | null>(null);
-  const [items, setItems] = useState<FoodItem[]>([]);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [scanning, setScanning] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const { status: scans, reload: reloadScans } = useScanStatus();
+  const [opening, setOpening] = useState(false);
+  const { status: scans } = useScanStatus();
   const [ideas, setIdeas] = useState<MealIdea[] | null>(null);
   const [ideasBusy, setIdeasBusy] = useState(false);
   const [ideasError, setIdeasError] = useState<string | null>(null);
 
-  async function getIdeas() {
-    if (!today) return;
-    setIdeasBusy(true);
-    setIdeasError(null);
-    const res = await mealIdeasAction(today);
-    setIdeasBusy(false);
-    if (res.ok) setIdeas(res.ideas);
-    else setIdeasError(res.error);
-  }
-
-  // Puts a suggested meal into the editor below, where it can be adjusted and saved.
-  function addIdea(m: MealIdea) {
-    setItems((prev) => [...prev, { name: m.name, portion: "1 serving", calories: Math.round(m.calories), protein_g: Math.round(m.protein_g), carbs_g: Math.round(m.carbs_g), fat_g: Math.round(m.fat_g) }]);
-  }
   const scansLeft = scans ? Math.max(0, FREE_SCANS - scans.used) : 0;
   const outOfScans = !!scans && !scans.premium && scansLeft === 0;
 
@@ -84,58 +43,34 @@ export default function FoodPage() {
     load();
   }, [load]);
 
+  async function getIdeas() {
+    if (!today) return;
+    setIdeasBusy(true);
+    setIdeasError(null);
+    const res = await mealIdeasAction(today);
+    setIdeasBusy(false);
+    if (res.ok) setIdeas(res.ideas);
+    else setIdeasError(res.error);
+  }
+
+  /** Opens the log page with a photo (scans straight away) or starting items. */
+  function openLog(pending: { photo?: string; items?: FoodItem[] }) {
+    setPendingMeal(pending);
+    router.push("/food/log");
+  }
+
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
     setError(null);
-    setItems([]);
+    setOpening(true);
     try {
-      setPhoto(await resizeImage(file));
+      openLog({ photo: await resizeImage(file) });
     } catch (err) {
+      setOpening(false);
       setError((err as Error).message);
     }
-  }
-
-  // While the AI works, the percentage eases toward 95%; it jumps to 100% when the answer arrives.
-  useEffect(() => {
-    if (!scanning) return;
-    const id = setInterval(() => setProgress((p) => (p < 95 ? p + (95 - p) * 0.04 : p)), 100);
-    return () => clearInterval(id);
-  }, [scanning]);
-
-  async function analyze() {
-    if (!photo) return;
-    setBusy(true);
-    setError(null);
-    setItems([]);
-    setProgress(0);
-    setScanning(true);
-    const res = await analyzeFoodAction(photo);
-    if (res.ok) {
-      setProgress(100);
-      await wait(600); // let "100%" show for a moment
-    }
-    setScanning(false);
-    setBusy(false);
-    reloadScans();
-    if (res.ok) setItems(res.items.map((i) => ({ ...i, calories: Math.round(i.calories), protein_g: Math.round(i.protein_g), carbs_g: Math.round(i.carbs_g), fat_g: Math.round(i.fat_g) })));
-    else setError(res.error);
-  }
-
-  const edit = (idx: number, patch: Partial<FoodItem>) => setItems(items.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
-
-  async function saveMeal() {
-    const clean = items.filter((i) => i.name.trim());
-    if (!clean.length || !today) return setError("Add at least one item with a name.");
-    setBusy(true);
-    const t = sumMacros(clean);
-    const { error: err } = await createClient().from("food_logs").insert({ date: today, items: clean, ...t, calories: Math.round(t.calories) });
-    setBusy(false);
-    if (err) return setError(err.message);
-    setItems([]);
-    setPhoto(null);
-    load();
   }
 
   async function deleteMeal(id: string) {
@@ -154,6 +89,37 @@ export default function FoodPage() {
         <MacroBars totals={sumMacros(meals)} targets={dailyTargets(profile)} />
       </section>
 
+      <section className="card space-y-3">
+        <h2 className="font-semibold">Log a meal</h2>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {outOfScans ? (
+            <Link href="/premium" className="flex flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-teal p-5 text-center transition duration-200 hover:scale-[1.02]">
+              <span className="text-3xl" aria-hidden>📷</span>
+              <span className="font-semibold">Free scans used up</span>
+              <span className="text-sm text-twilight/60">Upgrade for {PREMIUM_PRICE_LABEL} for unlimited scans</span>
+            </Link>
+          ) : (
+            <label className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl bg-accent p-5 text-center text-accent-ink transition duration-200 hover:scale-[1.02] hover:bg-accent-hover ${opening ? "opacity-60" : ""}`}>
+              <span className="text-3xl" aria-hidden>📷</span>
+              <span className="font-semibold">{opening ? "Opening…" : "Scan a meal"}</span>
+              <span className="text-sm opacity-75">Take or upload a photo</span>
+              <input type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} disabled={opening} />
+            </label>
+          )}
+          <button onClick={() => openLog({ items: [{ ...EMPTY_ITEM }] })} className="flex flex-col items-center justify-center gap-1 rounded-2xl border-2 border-frost bg-surface p-5 text-center transition duration-200 hover:scale-[1.02] hover:border-surf">
+            <span className="text-3xl" aria-hidden>✍️</span>
+            <span className="font-semibold">Add manually</span>
+            <span className="text-sm text-twilight/60">Type what you ate</span>
+          </button>
+        </div>
+        {scans && (
+          <p className="text-sm text-twilight/60">
+            {scans.premium ? "Premium: unlimited photo scans." : <>{scansLeft} of {FREE_SCANS} free photo scans left. <Link href="/premium" className="font-medium text-teal underline">Go Premium</Link></>}
+          </p>
+        )}
+        {error && <p className="rounded-lg bg-cyan p-2 text-sm font-medium">{error}</p>}
+      </section>
+
       {scans?.premium ? (
         <section className="card space-y-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -168,7 +134,12 @@ export default function FoodPage() {
                   <p className="font-semibold">{m.name}</p>
                   <p className="flex-1 text-sm text-twilight/70">{m.description}</p>
                   <p className="text-sm text-teal">{Math.round(m.calories)} kcal · P {Math.round(m.protein_g)} · C {Math.round(m.carbs_g)} · F {Math.round(m.fat_g)}</p>
-                  <button className="mt-1 text-left text-sm font-medium text-teal hover:underline" onClick={() => addIdea(m)}>+ Add to log</button>
+                  <button
+                    className="mt-1 text-left text-sm font-medium text-teal hover:underline"
+                    onClick={() => openLog({ items: [{ name: m.name, portion: "1 serving", calories: Math.round(m.calories), protein_g: Math.round(m.protein_g), carbs_g: Math.round(m.carbs_g), fat_g: Math.round(m.fat_g) }] })}
+                  >
+                    + Add to log
+                  </button>
                 </div>
               ))}
             </div>
@@ -181,83 +152,6 @@ export default function FoodPage() {
           </PremiumLock>
         )
       )}
-
-      <section className="card space-y-3">
-        <h2 className="font-semibold">Log a meal</h2>
-        <div className="flex flex-wrap gap-2">
-          <label className="btn cursor-pointer">
-            📷 Take / upload photo
-            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} />
-          </label>
-          <button className="btn-secondary" onClick={() => setItems([...items, { ...EMPTY }])}>+ Add item manually</button>
-        </div>
-
-        {scans && (
-          <p className="text-sm text-twilight/60">
-            {scans.premium ? "Premium: unlimited photo scans." : <>{scansLeft} of {FREE_SCANS} free photo scans left. <Link href="/premium" className="font-medium text-teal underline">Go Premium</Link></>}
-          </p>
-        )}
-
-        {photo && (
-          <div className="space-y-3">
-            <div className="relative w-fit overflow-hidden rounded-xl border border-frost">
-              {/* eslint-disable-next-line @next/next/no-img-element -- local data URL preview */}
-              <img src={photo} alt="Meal preview" className={`block max-h-72 transition ${scanning ? "brightness-90" : ""}`} />
-              {scanning && (
-                <div className="scan-grid absolute inset-0 bg-navy/20" aria-hidden>
-                  <div className="scan-line" />
-                </div>
-              )}
-            </div>
-            {scanning ? (
-              <div className="max-w-sm space-y-1" role="status">
-                <div className="flex justify-between text-sm font-medium text-teal">
-                  <span>Analyzing food…</span>
-                  <span>{Math.floor(progress)}%</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-cyan">
-                  <div className="h-full rounded-full bg-surf transition-all duration-200" style={{ width: `${progress}%` }} />
-                </div>
-              </div>
-            ) : outOfScans ? (
-              <div className="fade-in max-w-sm space-y-2 rounded-xl border border-teal p-3">
-                <p className="font-semibold">You&apos;ve used all {FREE_SCANS} free scans</p>
-                <p className="text-sm text-twilight/70">Get unlimited photo scans with Premium, or add items manually.</p>
-                <Link href="/premium" className="btn w-full">Upgrade for {PREMIUM_PRICE_LABEL}</Link>
-              </div>
-            ) : (
-              items.length === 0 && <button className="btn" onClick={analyze} disabled={busy || !scans}>Analyze macros</button>
-            )}
-          </div>
-        )}
-
-        {error && <p className="rounded-lg bg-cyan p-2 text-sm font-medium">{error}</p>}
-
-        {items.length > 0 && (
-          <div className="fade-in space-y-2">
-            <p className="text-sm text-twilight/60">Estimates. Adjust anything that looks off before saving.</p>
-            {items.map((it, idx) => (
-              <div key={idx} className="grid grid-cols-4 gap-2 rounded-xl border border-frost p-2 sm:grid-cols-7">
-                <input aria-label="Food" className="input col-span-3 sm:col-span-2" placeholder="Food" value={it.name} onChange={(e) => edit(idx, { name: e.target.value })} />
-                <input aria-label="Portion" className="input col-span-1" placeholder="Portion" value={it.portion} onChange={(e) => edit(idx, { portion: e.target.value })} />
-                {NUM_FIELDS.map(([k, label]) => (
-                  <label key={k} className="text-xs text-twilight/60">
-                    {label}
-                    <input type="number" min={0} className="input px-2" value={it[k]} onChange={(e) => edit(idx, { [k]: Number(e.target.value) })} />
-                  </label>
-                ))}
-                <button className="col-span-4 text-sm text-twilight/60 hover:underline sm:col-span-7 sm:text-right" onClick={() => setItems(items.filter((_, i) => i !== idx))}>
-                  Remove
-                </button>
-              </div>
-            ))}
-            <div className="flex items-center gap-3">
-              <button className="btn" onClick={saveMeal} disabled={busy || scanning}>Save meal</button>
-              <span className="text-sm text-teal">{Math.round(sumMacros(items).calories)} kcal total</span>
-            </div>
-          </div>
-        )}
-      </section>
 
       <section className="card">
         <h2 className="mb-2 font-semibold">Today&apos;s meals</h2>

@@ -87,7 +87,7 @@ function NavBar({ path }: { path: string }) {
         </div>
         <nav className="flex flex-wrap items-center gap-2" aria-label="Main">
           <TabGroup>
-            {FREE_TABS.map((t) => <Tab key={t.href} href={t.href} active={path === t.href}>{t.label}</Tab>)}
+            {FREE_TABS.map((t) => <Tab key={t.href} href={t.href} active={t.href === "/" ? path === "/" : path.startsWith(t.href)}>{t.label}</Tab>)}
           </TabGroup>
           <span className="flex-1" />
           <TabGroup className="border-surf/40">

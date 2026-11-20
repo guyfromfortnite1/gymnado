@@ -17,9 +17,9 @@ const SCHEMES: Record<Goal, { compound: Scheme; isolation: Scheme }> = {
 
 /** Per-day limits by experience: max exercises, total working sets, and estimated minutes. */
 export const SESSION_LIMITS: Record<Experience, { exercises: number; sets: number; minutes: number }> = {
-  beginner: { exercises: 3, sets: 8, minutes: 25 },
-  intermediate: { exercises: 4, sets: 11, minutes: 32 },
-  advanced: { exercises: 4, sets: 13, minutes: 38 },
+  beginner: { exercises: 4, sets: 10, minutes: 30 },
+  intermediate: { exercises: 5, sets: 13, minutes: 38 },
+  advanced: { exercises: 6, sets: 16, minutes: 45 },
 };
 const WARM_UP_MIN = 5;
 const WORK_SEC_PER_SET = 40;
