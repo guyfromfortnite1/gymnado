@@ -75,6 +75,38 @@ create table if not exists public.food_scans (
 );
 create index if not exists food_scans_user_id_idx on public.food_scans (user_id);
 
+-- Progress tracking (Premium): body weight per day and every logged set.
+create table if not exists public.body_weights (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users on delete cascade,
+  date date not null,
+  weight_kg numeric not null check (weight_kg between 30 and 300),
+  created_at timestamptz not null default now(),
+  unique (user_id, date)
+);
+
+create table if not exists public.set_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users on delete cascade,
+  scheduled_workout_id uuid references public.scheduled_workouts on delete set null,
+  exercise_id text not null,
+  date date not null,
+  set_number int not null check (set_number between 1 and 20),
+  weight_kg numeric check (weight_kg between 0 and 500),
+  reps int check (reps between 0 and 100),
+  created_at timestamptz not null default now()
+);
+create index if not exists set_logs_user_id_exercise_id_date_idx on public.set_logs (user_id, exercise_id, date);
+
+-- One row per AI request, for per-user daily rate limits. Users can add rows but never delete them.
+create table if not exists public.ai_usage (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users on delete cascade,
+  kind text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists ai_usage_user_id_kind_created_at_idx on public.ai_usage (user_id, kind, created_at);
+
 alter table public.profiles enable row level security;
 alter table public.plans enable row level security;
 alter table public.plan_days enable row level security;
@@ -101,3 +133,15 @@ drop policy if exists "read own scans" on public.food_scans;
 create policy "read own scans" on public.food_scans for select using (auth.uid() = user_id);
 drop policy if exists "add own scans" on public.food_scans;
 create policy "add own scans" on public.food_scans for insert with check (auth.uid() = user_id);
+
+alter table public.body_weights enable row level security;
+alter table public.set_logs enable row level security;
+alter table public.ai_usage enable row level security;
+drop policy if exists "own weights" on public.body_weights;
+create policy "own weights" on public.body_weights for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "own sets" on public.set_logs;
+create policy "own sets" on public.set_logs for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "read own ai usage" on public.ai_usage;
+create policy "read own ai usage" on public.ai_usage for select using (auth.uid() = user_id);
+drop policy if exists "add own ai usage" on public.ai_usage;
+create policy "add own ai usage" on public.ai_usage for insert with check (auth.uid() = user_id);

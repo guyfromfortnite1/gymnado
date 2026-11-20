@@ -3,13 +3,16 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import MacroBars from "@/components/MacroBars";
-import { analyzeFoodAction } from "@/app/actions";
+import { analyzeFoodAction, mealIdeasAction } from "@/app/actions";
+import PremiumLock from "@/components/PremiumLock";
+import type { MealIdea } from "@/lib/ai";
 import { dailyTargets, sumMacros } from "@/lib/macros";
 import { wait } from "@/lib/motion";
 import { FREE_SCANS, PREMIUM_PRICE_LABEL } from "@/lib/premium";
 import { createClient } from "@/lib/supabase/client";
 import { useProfile, useScanStatus, useToday } from "@/lib/hooks";
 import type { FoodItem } from "@/lib/types";
+import { PageSkeleton } from "@/components/Skeleton";
 
 type Meal = { id: string; items: FoodItem[]; calories: number; protein_g: number; carbs_g: number; fat_g: number; created_at: string };
 
@@ -50,6 +53,24 @@ export default function FoodPage() {
   const [scanning, setScanning] = useState(false);
   const [progress, setProgress] = useState(0);
   const { status: scans, reload: reloadScans } = useScanStatus();
+  const [ideas, setIdeas] = useState<MealIdea[] | null>(null);
+  const [ideasBusy, setIdeasBusy] = useState(false);
+  const [ideasError, setIdeasError] = useState<string | null>(null);
+
+  async function getIdeas() {
+    if (!today) return;
+    setIdeasBusy(true);
+    setIdeasError(null);
+    const res = await mealIdeasAction(today);
+    setIdeasBusy(false);
+    if (res.ok) setIdeas(res.ideas);
+    else setIdeasError(res.error);
+  }
+
+  // Puts a suggested meal into the editor below, where it can be adjusted and saved.
+  function addIdea(m: MealIdea) {
+    setItems((prev) => [...prev, { name: m.name, portion: "1 serving", calories: Math.round(m.calories), protein_g: Math.round(m.protein_g), carbs_g: Math.round(m.carbs_g), fat_g: Math.round(m.fat_g) }]);
+  }
   const scansLeft = scans ? Math.max(0, FREE_SCANS - scans.used) : 0;
   const outOfScans = !!scans && !scans.premium && scansLeft === 0;
 
@@ -122,7 +143,7 @@ export default function FoodPage() {
     load();
   }
 
-  if (!profile || !today) return <p className="text-twilight/60">Loading…</p>;
+  if (!profile || !today) return <PageSkeleton />;
 
   return (
     <div className="space-y-4">
@@ -132,6 +153,34 @@ export default function FoodPage() {
         <h2 className="mb-3 font-semibold">Today</h2>
         <MacroBars totals={sumMacros(meals)} targets={dailyTargets(profile)} />
       </section>
+
+      {scans?.premium ? (
+        <section className="card space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="flex-1 font-semibold">Meal ideas for the rest of today</h2>
+            <button className="btn-secondary" onClick={getIdeas} disabled={ideasBusy}>{ideasBusy ? "Thinking…" : ideas ? "New ideas" : "✨ Suggest meals"}</button>
+          </div>
+          {ideasError && <p className="rounded-lg bg-cyan p-2 text-sm">{ideasError}</p>}
+          {ideas && (
+            <div className="grid gap-2 sm:grid-cols-3">
+              {ideas.map((m, i) => (
+                <div key={`${m.name}-${i}`} className="fade-in flex flex-col gap-1 rounded-xl border border-frost p-3 transition duration-200 hover:scale-[1.03] hover:shadow-md" style={{ animationDelay: `${i * 80}ms` }}>
+                  <p className="font-semibold">{m.name}</p>
+                  <p className="flex-1 text-sm text-twilight/70">{m.description}</p>
+                  <p className="text-sm text-teal">{Math.round(m.calories)} kcal · P {Math.round(m.protein_g)} · C {Math.round(m.carbs_g)} · F {Math.round(m.fat_g)}</p>
+                  <button className="mt-1 text-left text-sm font-medium text-teal hover:underline" onClick={() => addIdea(m)}>+ Add to log</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : (
+        scans && (
+          <PremiumLock title="Meal ideas that fit your macros">
+            Not sure what to eat? Get 3 meal ideas that fit exactly what&apos;s left of today&apos;s calories, protein, carbs and fat.
+          </PremiumLock>
+        )
+      )}
 
       <section className="card space-y-3">
         <h2 className="font-semibold">Log a meal</h2>

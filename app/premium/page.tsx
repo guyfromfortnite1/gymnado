@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { manageBillingAction, startCheckoutAction } from "@/app/actions";
 import { useScanStatus } from "@/lib/hooks";
 import { FREE_SCANS, PREMIUM_PRICE_LABEL } from "@/lib/premium";
+import { PageSkeleton } from "@/components/Skeleton";
 
 export default function PremiumPage() {
   const { status, reload } = useScanStatus();
@@ -35,7 +36,7 @@ export default function PremiumPage() {
     setError(res.error);
   }
 
-  if (!status) return <p className="text-twilight/60">Loading…</p>;
+  if (!status) return <PageSkeleton />;
   return (
     <div className="mx-auto max-w-md space-y-4">
       <h1 className="text-2xl font-bold">
@@ -68,7 +69,9 @@ export default function PremiumPage() {
           <ul className="space-y-1">
             <li>✓ Unlimited food photo scans</li>
             <li>✓ Sport-specific training for your sports</li>
-            <li>✓ Instant calories and macros from any meal</li>
+            <li>✓ AI coach that knows your plan</li>
+            <li>✓ Progress tracking, charts and personal records</li>
+            <li>✓ Meal ideas that fit your macros</li>
           </ul>
           <p className="rounded-lg bg-cyan p-3 text-sm">
             You&apos;ve used {Math.min(status.used, FREE_SCANS)} of your {FREE_SCANS} free scans.
@@ -76,7 +79,7 @@ export default function PremiumPage() {
           <button className="btn w-full py-3 text-lg" onClick={() => go(() => startCheckoutAction())} disabled={busy}>
             {busy ? "Opening checkout…" : `Upgrade for ${PREMIUM_PRICE_LABEL}`}
           </button>
-          <p className="text-center text-xs text-twilight/50">Secure payment by Stripe.</p>
+          <p className="text-center text-xs text-twilight/50">Secure payment by Stripe. Renews monthly until you cancel. <Link href="/terms" className="underline">Terms</Link> · <Link href="/refund" className="underline">Refunds</Link></p>
         </section>
       )}
       {error && <p className="rounded-lg bg-cyan p-3 text-sm font-medium">{error}</p>}

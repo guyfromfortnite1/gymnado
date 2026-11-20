@@ -67,6 +67,12 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
           {isLogin ? "Create an account" : "Log in"}
         </Link>
       </p>
+      <p className="mt-6 text-center text-xs text-twilight/50">
+        {!isLogin && "By creating an account you agree to our "}
+        <Link className="underline" href="/terms">Terms</Link>{isLogin ? " · " : " and "}
+        <Link className="underline" href="/privacy">Privacy Policy</Link>
+        {!isLogin && ". GymNado is not medical advice."}
+      </p>
     </div>
   );
 }

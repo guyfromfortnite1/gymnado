@@ -1,8 +1,9 @@
 "use server";
 
 import Anthropic from "@anthropic-ai/sdk";
-import { analyzeFoodPhoto, suggestSwap, tunePlan } from "@/lib/ai";
-import { buildSchedule } from "@/lib/dates";
+import { analyzeFoodPhoto, coachReply, suggestMeals, suggestSwap, tunePlan, type ChatTurn, type MealIdea } from "@/lib/ai";
+import { addDays, buildSchedule } from "@/lib/dates";
+import { dailyTargets, sumMacros, type Targets } from "@/lib/macros";
 import { EXERCISE_BY_ID } from "@/lib/exercises";
 import { fitToTime, generatePlan, prescribe, swapCandidates } from "@/lib/generate";
 import { headers } from "next/headers";
@@ -46,6 +47,20 @@ const summarize = (p: Profile) => ({
   missing_equipment: p.missing_equipment,
 });
 
+// Per-user AI limits over a rolling 24 hours, so one account can't run up the Anthropic bill.
+const DAILY_AI_LIMITS = { plan: 10, swap: 30, food: 30, coach: 40, meals: 20 } as const;
+type AiKind = keyof typeof DAILY_AI_LIMITS;
+
+/** Records one AI request; returns an error message instead if today's limit is used up. */
+async function claimAiQuota(supabase: Supabase, kind: AiKind): Promise<string | null> {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { count, error } = await supabase.from("ai_usage").select("id", { count: "exact", head: true }).eq("kind", kind).gte("created_at", since);
+  if (error) return error.message;
+  if ((count ?? 0) >= DAILY_AI_LIMITS[kind]) return "You've reached today's limit for this feature. Please try again tomorrow.";
+  const { error: insertError } = await supabase.from("ai_usage").insert({ kind });
+  return insertError?.message ?? null;
+}
+
 const describe = (pe: PlanExercise) => {
   const e = EXERCISE_BY_ID[pe.exercise_id];
   return { ...pe, name: e.name, category: e.category, muscles: e.muscles };
@@ -64,6 +79,8 @@ export async function generatePlanAction(today: string): Promise<Result<{ aiNote
     let explanation: string | null = null;
     let aiNote: string | undefined;
     try {
+      const quota = await claimAiQuota(supabase, "plan");
+      if (quota) throw new Error(quota);
       const tuning = await tunePlan(summarize(profile), { split: splitName, days: days.map((d, i) => ({ day_index: i, name: d.name, exercises: d.exercises.map(describe) })) });
       explanation = tuning.explanation;
       for (const a of tuning.adjustments) {
@@ -110,6 +127,8 @@ export async function swapExerciseAction(planDayId: string, index: number, reaso
     const current = day?.exercises[index];
     if (!day || !current) return { ok: false, error: "Exercise not found." };
 
+    const quota = await claimAiQuota(supabase, "swap");
+    if (quota) return { ok: false, error: quota };
     const candidates = swapCandidates(profile.missing_equipment, day.exercises.map((x) => x.exercise_id));
     const pick = await suggestSwap(
       describe(current),
@@ -144,6 +163,8 @@ export async function analyzeFoodAction(dataUrl: string): Promise<Result<{ items
       if ((count ?? 0) >= FREE_SCANS) return { ok: false, error: `You've used all ${FREE_SCANS} free scans. Upgrade to Premium for unlimited scans.` };
     }
 
+    const quota = await claimAiQuota(supabase, "food");
+    if (quota) return { ok: false, error: quota };
     const { items } = await analyzeFoodPhoto(m[2], m[1] as "image/jpeg");
     if (!items.length) return { ok: false, error: "No food found in that photo. Try a clearer shot, or add items manually." };
     const { error } = await supabase.from("food_scans").insert({});
@@ -190,5 +211,72 @@ export async function manageBillingAction(): Promise<Result<{ url: string }>> {
     return { ok: true, url: portal.url };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Couldn't open billing." };
+  }
+}
+
+const PREMIUM_ONLY = "This is a Premium feature. Upgrade on the Premium tab to unlock it.";
+
+/** AI coach (Premium): replies to the chat using the athlete's profile, plan and recent training. */
+export async function coachAction(history: ChatTurn[], today: string): Promise<Result<{ reply: string }>> {
+  try {
+    const { supabase, profile } = await session();
+    if (!profile) return { ok: false, error: "Complete your profile first." };
+    if (!isPremiumStatus((await getSubscription(supabase))?.status)) return { ok: false, error: PREMIUM_ONLY };
+
+    // Only trust a short, well-formed history from the browser.
+    const turns = history.slice(-20).map((t) => ({ role: t.role === "assistant" ? "assistant" : "user", content: String(t.content).slice(0, 2000) }) as ChatTurn);
+    while (turns.length && turns[0].role !== "user") turns.shift();
+    if (!turns.length || turns.at(-1)!.role !== "user" || !turns.at(-1)!.content.trim()) return { ok: false, error: "Type a message first." };
+
+    const quota = await claimAiQuota(supabase, "coach");
+    if (quota) return { ok: false, error: quota };
+
+    const since = addDays(today, -14);
+    const [planRes, setsRes, weightRes, doneRes] = await Promise.all([
+      supabase.from("plans").select("split_name, plan_days(day_index, name, exercises)").eq("is_active", true).maybeSingle<{ split_name: string; plan_days: { day_index: number; name: string; exercises: PlanExercise[] }[] }>(),
+      supabase.from("set_logs").select("date, exercise_id, weight_kg, reps").gte("date", since).order("date"),
+      supabase.from("body_weights").select("date, weight_kg").order("date", { ascending: false }).limit(5),
+      supabase.from("scheduled_workouts").select("date, status").gte("date", since).lte("date", today),
+    ]);
+    const context = {
+      today,
+      profile: summarize(profile),
+      plan: planRes.data && {
+        split: planRes.data.split_name,
+        days: [...planRes.data.plan_days].sort((a, b) => a.day_index - b.day_index).map((d) => ({ name: d.name, exercises: d.exercises.map((e) => `${EXERCISE_BY_ID[e.exercise_id]?.name ?? e.exercise_id} ${e.sets}×${e.reps}`) })),
+      },
+      logged_sets_last_14_days: (setsRes.data ?? []).map((s) => `${s.date} ${EXERCISE_BY_ID[s.exercise_id]?.name ?? s.exercise_id}: ${s.weight_kg ?? "-"} kg × ${s.reps ?? "-"}`),
+      recent_body_weight_kg: weightRes.data ?? [],
+      workouts_last_14_days: { done: (doneRes.data ?? []).filter((w) => w.status === "done").length, skipped: (doneRes.data ?? []).filter((w) => w.status === "skipped").length },
+    };
+    return { ok: true, reply: await coachReply(turns, context) };
+  } catch (e) {
+    return { ok: false, error: aiError(e) };
+  }
+}
+
+/** Meal ideas (Premium) that fit what's left of today's calories and macros. */
+export async function mealIdeasAction(today: string): Promise<Result<{ ideas: MealIdea[]; remaining: Targets }>> {
+  try {
+    const { supabase, profile } = await session();
+    if (!profile) return { ok: false, error: "Complete your profile first." };
+    if (!isPremiumStatus((await getSubscription(supabase))?.status)) return { ok: false, error: PREMIUM_ONLY };
+
+    const quota = await claimAiQuota(supabase, "meals");
+    if (quota) return { ok: false, error: quota };
+
+    const { data: meals } = await supabase.from("food_logs").select("items, calories, protein_g, carbs_g, fat_g").eq("date", today).returns<(Targets & { items: FoodItem[] })[]>();
+    const targets = dailyTargets(profile);
+    const eaten = sumMacros(meals ?? []);
+    const remaining: Targets = {
+      calories: Math.max(0, Math.round(targets.calories - eaten.calories)),
+      protein_g: Math.max(0, Math.round(targets.protein_g - eaten.protein_g)),
+      carbs_g: Math.max(0, Math.round(targets.carbs_g - eaten.carbs_g)),
+      fat_g: Math.max(0, Math.round(targets.fat_g - eaten.fat_g)),
+    };
+    const { ideas } = await suggestMeals(remaining, summarize(profile), (meals ?? []).flatMap((m) => m.items.map((i) => i.name)));
+    return { ok: true, ideas: ideas.slice(0, 3), remaining };
+  } catch (e) {
+    return { ok: false, error: aiError(e) };
   }
 }

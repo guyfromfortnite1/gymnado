@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import { Suspense } from "react";
 import Nav from "@/components/Nav";
 import "./globals.css";
 
@@ -14,7 +15,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
-        <Nav />
+        {/* Nav reads the URL; on request-time routes (e.g. /workout/[id]) that needs a Suspense boundary. */}
+        <Suspense fallback={null}>
+          <Nav />
+        </Suspense>
         <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">{children}</main>
       </body>
     </html>

@@ -47,6 +47,25 @@ body {
   .fade-in, .fade-out { animation: none; }
 }
 
+/* Terms / Privacy / Refund text (components/LegalPage.tsx). */
+.legal h2 { @apply pt-2 text-lg font-semibold; }
+.legal ul { @apply list-disc space-y-1 pl-5; }
+.legal a { @apply text-teal underline; }
+
+/* Loading placeholders (components/Skeleton.tsx): a soft light sweep over pale blue. */
+.skeleton {
+  background: linear-gradient(90deg, #e3f6fb 25%, #f3fcfe 50%, #e3f6fb 75%);
+  background-size: 200% 100%;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-sweep {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
+
 /* Premium look: deep blue with a slow shimmer and twinkling diamonds (components/PremiumSurface.tsx). */
 .premium-surface {
   position: relative;

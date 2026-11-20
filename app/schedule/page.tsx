@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import ExerciseList from "@/components/ExerciseList";
 import { addDays, formatShort, startOfWeek } from "@/lib/dates";
 import { useToday } from "@/lib/hooks";
 import { createClient } from "@/lib/supabase/client";
 import { WEEKDAYS, type PlanExercise } from "@/lib/types";
+import { PageSkeleton } from "@/components/Skeleton";
 
 export type Workout = { id: string; date: string; status: "planned" | "done" | "skipped"; plan_days: { name: string; exercises: PlanExercise[] } };
 
@@ -45,7 +47,7 @@ export default function SchedulePage() {
     load();
   }
 
-  if (!today || !weekStart) return <p className="text-twilight/60">Loading…</p>;
+  if (!today || !weekStart) return <PageSkeleton />;
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   return (
@@ -80,6 +82,7 @@ export default function SchedulePage() {
                       </button>
                       {w.status === "planned" ? (
                         <>
+                          <Link href={`/workout/${w.id}`} className="text-sm font-semibold text-teal hover:underline">▶ Start</Link>
                           <button className="text-sm font-medium text-teal hover:underline" onClick={() => update(w.id, { status: "done" })}>Done</button>
                           <button className="text-sm text-twilight/60 hover:underline" onClick={() => update(w.id, { status: "skipped" })}>Skip</button>
                           <button className="text-sm text-twilight/60 hover:underline" onClick={() => setMoving(moving === w.id ? null : w.id)}>Move</button>

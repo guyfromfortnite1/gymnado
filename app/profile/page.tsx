@@ -6,6 +6,7 @@ import ProfileForm from "@/components/ProfileForm";
 import { generatePlanAction } from "@/app/actions";
 import { todayLocal } from "@/lib/dates";
 import { useProfile } from "@/lib/hooks";
+import { PageSkeleton } from "@/components/Skeleton";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function ProfilePage() {
     router.push("/plan");
   }
 
-  if (!profile) return <p className="text-twilight/60">Loading…</p>;
+  if (!profile) return <PageSkeleton />;
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Profile</h1>

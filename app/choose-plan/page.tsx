@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { startCheckoutAction } from "@/app/actions";
@@ -56,8 +57,10 @@ export default function ChoosePlanPage() {
             <li>✓ Personal training plan and split</li>
             <li>✓ Weekly workout schedule</li>
             <li>✓ AI exercise swaps</li>
+            <li>✓ Workout mode with rest timer</li>
             <li>✓ {FREE_SCANS} food photo scans</li>
             <li className="text-twilight/40">✕ Sport-specific training</li>
+            <li className="text-twilight/40">✕ AI coach, progress tracking, meal ideas</li>
           </ul>
           <button className="btn-secondary w-full py-3" onClick={chooseFree} disabled={!!busy}>
             {busy === "free" ? "…" : "Continue with Free"}
@@ -81,6 +84,9 @@ export default function ChoosePlanPage() {
             <li>✓ Everything in Free</li>
             <li>✓ Unlimited food photo scans</li>
             <li>✓ Sport-specific training for your sports</li>
+            <li>✓ AI coach that knows your plan</li>
+            <li>✓ Progress tracking, charts and records</li>
+            <li>✓ Meal ideas that fit your macros</li>
             <li>✓ Cancel anytime</li>
           </ul>
           <button className="w-full rounded-xl bg-white py-3 font-semibold text-twilight transition hover:bg-cyan disabled:opacity-60" onClick={choosePremium} disabled={!!busy}>
@@ -90,6 +96,7 @@ export default function ChoosePlanPage() {
       </div>
 
       {error && <p className="rounded-lg bg-cyan p-3 text-sm font-medium">{error}</p>}
+      <p className="text-center text-xs text-twilight/50">Premium renews monthly until you cancel. <Link href="/terms" className="underline">Terms</Link> · <Link href="/refund" className="underline">Refunds</Link> · <Link href="/privacy" className="underline">Privacy</Link></p>
     </div>
   );
 }

@@ -10,16 +10,18 @@ const LINKS = [
   { href: "/plan", label: "Plan" },
   { href: "/schedule", label: "Schedule" },
   { href: "/food", label: "Food" },
+  { href: "/progress", label: "Progress" },
+  { href: "/coach", label: "Coach" },
   { href: "/profile", label: "Profile" },
   { href: "/premium", label: "Premium" },
 ];
 // Pages without the tab bar: signed-out pages, the plan choice, and building the first plan.
-const NO_NAV = ["/login", "/signup", "/forgot-password", "/reset-password", "/choose-plan", "/onboarding"];
+const NO_NAV = ["/login", "/signup", "/forgot-password", "/reset-password", "/choose-plan", "/onboarding", "/terms", "/privacy", "/refund"];
 
 export default function Nav() {
   const path = usePathname();
   const router = useRouter();
-  if (NO_NAV.includes(path)) return null;
+  if (NO_NAV.includes(path) || path.startsWith("/workout/")) return null;
 
   async function signOut() {
     await createClient().auth.signOut();

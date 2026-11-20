@@ -9,6 +9,7 @@ import { addDays, formatShort } from "@/lib/dates";
 import { dailyTargets, sumMacros, type Targets } from "@/lib/macros";
 import { createClient } from "@/lib/supabase/client";
 import { useProfile, useToday } from "@/lib/hooks";
+import { PageSkeleton } from "@/components/Skeleton";
 
 export default function Dashboard() {
   const profile = useProfile();
@@ -39,7 +40,7 @@ export default function Dashboard() {
     load();
   }
 
-  if (!profile || !today || workouts === null) return <p className="text-twilight/60">Loading…</p>;
+  if (!profile || !today || workouts === null) return <PageSkeleton />;
 
   return (
     <div className="space-y-4">
@@ -62,7 +63,10 @@ export default function Dashboard() {
             <div className="flex items-center gap-3">
               <span className="flex-1 font-semibold text-teal">{w.plan_days.name}</span>
               {w.status === "planned" ? (
-                <button className="btn" onClick={() => markDone(w.id)}>Mark done</button>
+                <>
+                  <Link href={`/workout/${w.id}`} className="btn">▶ Start workout</Link>
+                  <button className="btn-secondary" onClick={() => markDone(w.id)}>Mark done</button>
+                </>
               ) : (
                 <span className="rounded-full bg-frost px-3 py-1 text-sm">{w.status === "done" ? "✓ Done" : "Skipped"}</span>
               )}

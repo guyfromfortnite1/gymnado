@@ -77,3 +77,45 @@ List each distinct food or drink you can see as a separate item, with an estimat
     ],
   );
 }
+
+// ---- AI coach chat (Premium) ----
+
+export type ChatTurn = { role: "user" | "assistant"; content: string };
+
+/** One coach reply. `context` is the athlete's profile, plan and recent training, as JSON. */
+export async function coachReply(history: ChatTurn[], context: object): Promise<string> {
+  const res = await client.beta.messages.create({
+    model: MODEL,
+    max_tokens: 4000,
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+    output_config: { effort: "low" },
+    system: `${COACH}
+You are the athlete's personal coach inside the GymNado app. Use their profile, plan and recent training below to give advice that fits them. Keep answers short (a few sentences or a short list) unless they ask for detail. You can suggest changes to their training, but they make changes in the app themselves (Plan tab "Swap", Profile tab to change answers). For pain that is sharp, worsening, or comes with swelling or numbness, tell them to stop that exercise and see a doctor or physiotherapist. You are not a doctor; don't diagnose.
+
+Athlete data:
+${JSON.stringify(context)}`,
+    messages: history,
+  });
+  if (res.stop_reason === "refusal") throw new Error("The coach can't help with that one. Try asking another way.");
+  const text = res.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("\n").trim();
+  if (!text) throw new Error("The coach didn't reply. Please try again.");
+  return text;
+}
+
+// ---- Meal ideas for the rest of the day (Premium) ----
+
+const MealsSchema = z.object({
+  ideas: z.array(
+    z.object({ name: z.string(), description: z.string(), calories: z.number(), protein_g: z.number(), carbs_g: z.number(), fat_g: z.number() }),
+  ),
+});
+export type MealIdea = z.infer<typeof MealsSchema>["ideas"][number];
+
+export function suggestMeals(remaining: object, profileSummary: object, eatenToday: string[]) {
+  return ask(
+    MealsSchema,
+    `You are a registered dietitian. Suggest 3 different, realistic meals or snacks the athlete could eat next that help them hit what's left of today's targets without going far over. Use common ingredients and simple preparation. "description" is one or two sentences with the main ingredients and portions. Give your best estimate of calories, protein_g, carbs_g and fat_g for each.`,
+    `Remaining for today: ${JSON.stringify(remaining)}\nAthlete: ${JSON.stringify(profileSummary)}\nAlready eaten today: ${eatenToday.length ? eatenToday.join("; ") : "nothing yet"}`,
+  );
+}

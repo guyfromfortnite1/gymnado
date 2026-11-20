@@ -7,6 +7,7 @@ import { todayLocal } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/client";
 import { useProfile } from "@/lib/hooks";
 import type { PlanExercise } from "@/lib/types";
+import { PageSkeleton } from "@/components/Skeleton";
 
 type Plan = { id: string; split_name: string; ai_explanation: string | null; plan_days: { id: string; day_index: number; name: string; exercises: PlanExercise[] }[] };
 
@@ -55,7 +56,7 @@ export default function PlanPage() {
     load();
   }
 
-  if (!profile || plan === undefined) return <p className="text-twilight/60">Loading…</p>;
+  if (!profile || plan === undefined) return <PageSkeleton />;
 
   return (
     <div className="space-y-4">
