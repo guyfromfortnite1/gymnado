@@ -29,6 +29,12 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
     setBusy(false);
     if (error) return setMessage(error.message);
     if (!data.session) return setMessage("Sign-up needs email confirmation turned off in Supabase (Authentication → Sign In / Providers → Email → Confirm email).");
+    // Bring back the theme they chose in Settings (saved on the account).
+    const theme = data.user?.user_metadata?.theme;
+    if (theme === "dark" || theme === "light") {
+      localStorage.setItem("theme", theme);
+      document.documentElement.classList.toggle("dark", theme === "dark");
+    }
     // Ask Free or Premium once: right after sign-up, or on login if they haven't chosen and aren't Premium.
     let next = "/choose-plan";
     if (mode === "login" && data.user?.user_metadata?.plan_chosen) next = "/";

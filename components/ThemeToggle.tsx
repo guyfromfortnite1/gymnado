@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 /** Light / dark switch for Settings. The choice is saved in this browser (see THEME_SCRIPT in lib/theme.ts). */
 export default function ThemeToggle() {
@@ -16,6 +17,8 @@ export default function ThemeToggle() {
     setDark(next);
     document.documentElement.classList.toggle("dark", next);
     localStorage.setItem("theme", next ? "dark" : "light");
+    // Also save it to the account, so it comes back after logging in again or on another device.
+    createClient().auth.updateUser({ data: { theme: next ? "dark" : "light" } });
   }
 
   return (

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { Suspense } from "react";
 import Nav from "@/components/Nav";
+import Splash from "@/components/Splash";
 import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className="flex min-h-full flex-col font-sans">
+        <Splash />
         {/* Nav reads the URL; on request-time routes (e.g. /workout/[id]) that needs a Suspense boundary. */}
         <Suspense fallback={null}>
           <Nav />

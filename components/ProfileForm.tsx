@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import MuscleMap from "@/components/MuscleMap";
-import PremiumLock from "@/components/PremiumLock";
+import Link from "next/link";
+import PremiumSurface, { PremiumBadge } from "@/components/PremiumSurface";
 import { useScanStatus } from "@/lib/hooks";
 import { createClient } from "@/lib/supabase/client";
 import { cmToFtIn, ftInToCm, kgToLb, lbToKg } from "@/lib/units";
@@ -73,7 +74,7 @@ function PhotoCard({ src, muscle, label, on, onClick }: { src?: string; muscle?:
   );
 }
 
-type Step = { title: string; hint?: string; check?: () => string | null; body: React.ReactNode };
+type Step = { title: string; hint?: string; check?: () => string | null; body: React.ReactNode; premium?: boolean };
 
 /**
  * Asks for body stats and training preferences one question at a time.
@@ -244,10 +245,21 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
       hint: "Pick 2 to 6. Your split depends on how many days you train.",
       check: () => (p.training_days.length >= 2 && p.training_days.length <= 6 ? null : "Pick 2 to 6 training days."),
       body: (
-        <div className="flex flex-wrap gap-2">
-          {WEEKDAYS.map((d, i) => (
-            <Chip key={d} on={p.training_days.includes(i)} onClick={() => set("training_days", toggle(p.training_days, i))}>{d}</Chip>
-          ))}
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
+          {WEEKDAYS.map((d, i) => {
+            const on = p.training_days.includes(i);
+            return (
+              <button
+                key={d}
+                type="button"
+                aria-pressed={on}
+                onClick={() => set("training_days", toggle(p.training_days, i))}
+                className={`h-16 rounded-xl border-2 text-lg font-semibold transition duration-200 hover:scale-105 hover:shadow-md ${on ? "border-teal bg-accent text-accent-ink" : "border-frost bg-surface text-twilight hover:border-surf"}`}
+              >
+                {d}
+              </button>
+            );
+          })}
         </div>
       ),
     },
@@ -266,12 +278,18 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
     },
     {
       title: "Do you play any sports?",
-      hint: premium ? "Optional. Pick as many as you like. Sport-specific work is rotated through your week." : undefined,
+      hint: premium ? "Optional. Pick as many as you like. Sport-specific work is rotated through your week." : "Build a physique for your sport.",
+      premium: true,
       body: !premium ? (
-        <PremiumLock title="Build a physique for your sport">
-          Premium adds sport-specific exercises to every workout, for basketball, soccer, boxing, running, tennis and more.
-          <span className="mt-1 block text-xs text-ice/70">Your answers are saved, so you can come back and finish. Or finish below without it.</span>
-        </PremiumLock>
+        <div className="space-y-3">
+          <p className="text-ice/90">
+            Premium adds sport-specific exercises to your workouts, for basketball, soccer, boxing, running, tennis and more.
+          </p>
+          <Link href="/premium" className="inline-flex rounded-xl bg-white px-4 py-2 font-semibold text-navy transition duration-200 hover:scale-105 hover:bg-ice">
+            Upgrade to unlock
+          </Link>
+          <p className="text-xs text-ice/70">Your answers are saved, so you can come back and finish. Or finish below without it.</p>
+        </div>
       ) : (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -279,7 +297,7 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
           </div>
           {Object.entries(SPORT_GROUPS).map(([group, sports]) => (
             <div key={group}>
-              <p className="mb-1 text-sm font-medium text-twilight/60">{group}</p>
+              <p className="mb-1 text-sm font-medium text-ice/80">{group}</p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {Object.entries(sports).map(([id, label]) => (
                   <PhotoCard key={id} src={`/sports/${id}.jpg`} label={label} on={p.sports.includes(id as Sport)} onClick={() => set("sports", toggle(p.sports, id as Sport))} />
@@ -350,13 +368,26 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
           <p className="font-semibold" role="status">{busyLabel}</p>
         </section>
       ) : (
-        <section key={step} className={`card space-y-3 ${fading ? "fade-out" : "fade-in"}`}>
-          <div>
-            <h2 className="text-lg font-semibold">{current.title}</h2>
-            {current.hint && <p className="text-sm text-twilight/60">{current.hint}</p>}
-          </div>
-          {current.body}
-        </section>
+        current.premium ? (
+          <section key={step} className={fading ? "fade-out" : "fade-in"}>
+            <PremiumSurface className="space-y-3">
+              <PremiumBadge />
+              <div>
+                <h2 className="text-lg font-semibold">{current.title}</h2>
+                {current.hint && <p className="text-sm text-ice/80">{current.hint}</p>}
+              </div>
+              {current.body}
+            </PremiumSurface>
+          </section>
+        ) : (
+          <section key={step} className={`card space-y-3 ${fading ? "fade-out" : "fade-in"}`}>
+            <div>
+              <h2 className="text-lg font-semibold">{current.title}</h2>
+              {current.hint && <p className="text-sm text-twilight/60">{current.hint}</p>}
+            </div>
+            {current.body}
+          </section>
+        )
       )}
 
       {error && <p className="rounded-lg bg-cyan p-3 text-sm font-medium">{error}</p>}

@@ -72,6 +72,37 @@ body {
   .fade-in, .fade-out { animation: none; }
 }
 
+/* Opening intro (components/Splash.tsx). Timeline ~4.2 s: tornado swirls in (0-1.8 s), logo appears (1.6 s),
+   loading bar fills (1.9-3.6 s), everything fades out (3.7-4.2 s). */
+.splash { background: radial-gradient(circle at 50% 45%, #0a1a7a 0%, #03045e 55%, #020524 100%); }
+html.splash-seen .splash { display: none; }
+.splash-out { animation: splash-fade 500ms ease-in forwards; }
+@keyframes splash-fade { to { opacity: 0; visibility: hidden; } }
+
+.splash-tornado { animation: splash-swirl 1.8s cubic-bezier(.45, .05, .25, 1) both, splash-handover 600ms ease-in 1.6s forwards; }
+@keyframes splash-swirl {
+  0%   { transform: translate(-46vw, 42vh) scale(.35) rotate(-25deg); opacity: 0; }
+  15%  { opacity: 1; }
+  40%  { transform: translate(30vw, 22vh) scale(.6) rotate(15deg); }
+  70%  { transform: translate(-14vw, -6vh) scale(.85) rotate(-8deg); }
+  100% { transform: translate(0, 0) scale(1.15) rotate(0); opacity: 1; }
+}
+@keyframes splash-handover { to { transform: scale(1.6); opacity: 0; } }
+/* Each ring sways side to side, out of step with its neighbours, so the funnel looks like it's spinning. */
+.splash-ring { animation: splash-spin 520ms ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+@keyframes splash-spin { from { transform: translateX(-7px); } to { transform: translateX(7px); } }
+
+.splash-brand { animation: splash-brand-in 600ms ease-out 1.6s both; }
+@keyframes splash-brand-in { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
+.splash-bar { animation: splash-load 1.7s ease-in-out 1.9s both; }
+@keyframes splash-load { from { width: 0; } to { width: 100%; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-tornado { display: none; }
+  .splash-ring, .splash-brand, .splash-bar { animation: none; }
+  .splash-bar { width: 100%; }
+}
+
 /* Terms / Privacy / Refund text (components/LegalPage.tsx). */
 .legal h2 { @apply pt-2 text-lg font-semibold; }
 .legal ul { @apply list-disc space-y-1 pl-5; }
