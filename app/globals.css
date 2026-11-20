@@ -37,3 +37,12 @@ body {
     @apply border-teal bg-teal text-white;
   }
 }
+
+/* Fade + scale transitions for the profile questions and the login/sign-up form. */
+@keyframes fade-scale-in { from { opacity: 0; transform: scale(0.95); } }
+@keyframes fade-scale-out { to { opacity: 0; transform: scale(0.95); } }
+.fade-in { animation: fade-scale-in 250ms ease-out both; }
+.fade-out { animation: fade-scale-out 200ms ease-in both; }
+@media (prefers-reduced-motion: reduce) {
+  .fade-in, .fade-out { animation: none; }
+}

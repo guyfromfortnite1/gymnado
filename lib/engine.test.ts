@@ -12,7 +12,7 @@ const base = {
   physique_goal: "muscular" as const,
   experience: "intermediate" as const,
   target_muscles: [],
-  sport: null,
+  sports: [] as Sport[],
   missing_equipment: [] as Equipment[],
 };
 
@@ -62,8 +62,16 @@ describe("generatePlan", () => {
   });
 
   it.each(Object.keys(SPORTS) as Sport[])("adds sport-specific work for %s", (sport) => {
-    const plan = generatePlan({ ...base, sport, physique_goal: "athletic" });
+    const plan = generatePlan({ ...base, sports: [sport], physique_goal: "athletic" });
     for (const d of plan.days) expect(d.exercises.some((e) => EXERCISE_BY_ID[e.exercise_id].sports.includes(sport))).toBe(true);
+  });
+
+  it("adds work for every chosen sport when several are picked", () => {
+    const sports: Sport[] = ["basketball", "boxing", "running"];
+    const plan = generatePlan({ ...base, sports });
+    for (const d of plan.days) {
+      for (const s of sports) expect(d.exercises.some((e) => EXERCISE_BY_ID[e.exercise_id].sports.includes(s))).toBe(true);
+    }
   });
 
   it("applies goal rep schemes: strength compounds are heavy, lean gets a finisher", () => {

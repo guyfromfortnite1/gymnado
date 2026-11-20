@@ -12,7 +12,7 @@ create table public.profiles (
   experience text not null,
   physique_goal text not null,
   target_muscles text[] not null default '{}',
-  sport text,
+  sports text[] not null default '{}',
   missing_equipment text[] not null default '{}',
   training_days int[] not null,
   updated_at timestamptz not null default now()

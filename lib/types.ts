@@ -85,7 +85,7 @@ export type Profile = {
   experience: Experience;
   physique_goal: Goal;
   target_muscles: Muscle[];
-  sport: Sport | null;
+  sports: Sport[];
   missing_equipment: Equipment[];
   training_days: number[]; // 0 = Sunday … 6 = Saturday
 };

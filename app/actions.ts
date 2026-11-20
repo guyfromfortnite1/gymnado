@@ -32,7 +32,7 @@ const summarize = (p: Profile) => ({
   experience: p.experience,
   days_per_week: p.training_days.length,
   prioritized_muscles: p.target_muscles,
-  sport: p.sport ? SPORTS[p.sport] : "none",
+  sports: p.sports.length ? p.sports.map((s) => SPORTS[s]) : "none",
   missing_equipment: p.missing_equipment,
 });
 

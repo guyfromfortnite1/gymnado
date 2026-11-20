@@ -2,7 +2,7 @@ import { EXERCISES, isAvailable, type Exercise } from "./exercises";
 import { chooseSplit, type Slot } from "./splits";
 import type { Equipment, Experience, Goal, PlanDay, PlanExercise, Profile } from "./types";
 
-type PlanInput = Pick<Profile, "training_days" | "physique_goal" | "experience" | "target_muscles" | "sport" | "missing_equipment">;
+type PlanInput = Pick<Profile, "training_days" | "physique_goal" | "experience" | "target_muscles" | "sports" | "missing_equipment">;
 
 // [sets, reps, rest seconds]
 type Scheme = [number, string, number];
@@ -62,10 +62,13 @@ export function generatePlan(p: PlanInput): { splitName: string; days: PlanDay[]
       }
     }
 
-    if (p.sport) {
-      const sportPool = pool.filter((e) => e.sports.includes(p.sport!));
-      const count = p.physique_goal === "athletic" ? 2 : 1;
-      for (let k = 0; k < count; k++) pick(sportPool, dayIndex * count + k);
+    // At least one exercise per sport; athletic goals get two when only one sport is chosen.
+    if (p.sports.length) {
+      const count = Math.max(p.physique_goal === "athletic" ? 2 : 1, p.sports.length);
+      for (let k = 0; k < count; k++) {
+        const sport = p.sports[k % p.sports.length];
+        pick(pool.filter((e) => e.sports.includes(sport)), dayIndex * count + k);
+      }
     }
 
     if (p.physique_goal === "lean") pick(pool.filter((e) => e.category === "conditioning"), dayIndex);

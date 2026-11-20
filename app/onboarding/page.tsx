@@ -11,19 +11,21 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
 
   async function onSaved() {
+    setError(null);
     const res = await generatePlanAction(todayLocal());
     if (!res.ok) return setError(`Profile saved, but the plan couldn't be built: ${res.error}`);
     router.push("/plan");
+    return "leaving" as const;
   }
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold">Let&apos;s build your plan</h1>
-        <p className="text-twilight/70">Tell us about yourself and how you want to train. You can change any of this later.</p>
+        <p className="text-twilight/70">Answer a few quick questions. You can change any of this later.</p>
       </div>
       {error && <p className="rounded-lg bg-cyan p-3 text-sm font-medium">{error}</p>}
-      <ProfileForm submitLabel="Build my plan" onSaved={onSaved} />
+      <ProfileForm submitLabel="Build my plan" busyLabel="Building your plan…" onSaved={onSaved} />
     </div>
   );
 }

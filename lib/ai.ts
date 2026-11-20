@@ -39,7 +39,7 @@ export function tunePlan(profileSummary: object, plan: object): Promise<Tuning> 
     TuneSchema,
     `${COACH}
 A rules engine has already chosen this athlete's split and exercises. Your job:
-1. "explanation": 3-6 sentences on why this split and these exercises fit their physique goal, prioritized muscles, sport, experience, and schedule.
+1. "explanation": 3-6 sentences on why this split and these exercises fit their physique goal, prioritized muscles, sports, experience, and schedule.
 2. "adjustments": fine-tune sets, reps (a short string like "8-10" or "30 s"), and rest_sec for exercises already in the plan, to suit their goal and experience. Only list exercises you want to change. Never add, remove, or rename exercises; use the exact day_index and exercise_id from the plan.`,
     `Athlete profile:\n${JSON.stringify(profileSummary, null, 2)}\n\nPlan:\n${JSON.stringify(plan, null, 2)}`,
   );

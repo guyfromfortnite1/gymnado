@@ -33,7 +33,7 @@ export default function ProfilePage() {
         </div>
       )}
       {error && <p className="rounded-lg bg-cyan p-3 text-sm font-medium">{error}</p>}
-      <ProfileForm initial={profile} submitLabel="Save changes" onSaved={() => { setSaved(true); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+      <ProfileForm initial={profile} submitLabel="Save changes" busyLabel="Saving…" onSaved={() => { setSaved(true); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
     </div>
   );
 }
