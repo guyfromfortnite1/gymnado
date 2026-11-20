@@ -44,7 +44,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const isLogin = mode === "login";
   return (
     <div className={`mx-auto mt-10 max-w-sm ${leaving ? "fade-out" : ""}`}>
-      <h1 className="mb-1 flex justify-center text-3xl"><Logo size={44} /></h1>
+      <h1 className="mb-1 flex justify-center text-3xl"><Logo size={38} /></h1>
       <p className="mb-6 text-center text-twilight/70">Progress starts here.</p>
       <form onSubmit={submit} className="card space-y-4">
         <div>

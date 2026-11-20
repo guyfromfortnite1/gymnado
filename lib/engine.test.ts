@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { chooseSplit } from "./splits";
-import { estimateMinutes, fitToTime, generatePlan, MAX_SESSION_MIN } from "./generate";
+import { estimateMinutes, fitToTime, generatePlan, MAX_EXERCISES, MAX_SESSION_MIN, MAX_SETS } from "./generate";
 import { EXERCISE_BY_ID, EXERCISES } from "./exercises";
 import { dailyTargets } from "./macros";
 import { cmToFtIn, ftInToCm, kgToLb, lbToKg } from "./units";
@@ -56,9 +56,11 @@ describe("generatePlan", () => {
   });
 
   it("adds an extra exercise for prioritized muscles", () => {
-    const without = generatePlan(base).days[0].exercises.length;
-    const withChest = generatePlan({ ...base, target_muscles: ["chest"] }).days[0].exercises.length;
-    expect(withChest).toBe(without + 1);
+    // Push day (day 0 of a 3-day muscular plan) trains chest; a chest priority adds chest work, even with the session cap.
+    const chestCount = (ex: { exercise_id: string }[]) => ex.filter((e) => EXERCISE_BY_ID[e.exercise_id].muscles[0] === "chest").length;
+    const without = chestCount(generatePlan(base).days[0].exercises);
+    const withChest = chestCount(generatePlan({ ...base, target_muscles: ["chest"] }).days[0].exercises);
+    expect(withChest).toBeGreaterThan(without);
   });
 
   it.each(Object.keys(SPORTS) as Sport[])("adds sport-specific work for %s", (sport) => {
@@ -84,7 +86,7 @@ describe("generatePlan", () => {
     for (const d of lean.days) expect(EXERCISE_BY_ID[d.exercises.at(-1)!.exercise_id].category).toBe("conditioning");
   });
 
-  it("keeps every session to about an hour", () => {
+  it("keeps every session short: max exercises, sets and minutes", () => {
     const goals = ["lean", "muscular", "strength", "athletic"] as const;
     const levels = ["beginner", "intermediate", "advanced"] as const;
     const dayCounts = [[1, 4], [1, 3, 5], [1, 2, 4, 5], [1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]];
@@ -95,6 +97,8 @@ describe("generatePlan", () => {
             const plan = generatePlan({ ...base, physique_goal, experience, training_days, sports, target_muscles: ["chest", "biceps", "glutes"] });
             for (const d of plan.days) {
               expect(estimateMinutes(d.exercises)).toBeLessThanOrEqual(MAX_SESSION_MIN);
+              expect(d.exercises.length).toBeLessThanOrEqual(MAX_EXERCISES);
+              expect(d.exercises.reduce((n, e) => n + (EXERCISE_BY_ID[e.exercise_id].category === "conditioning" ? 0 : e.sets), 0)).toBeLessThanOrEqual(MAX_SETS);
               expect(d.exercises.length).toBeGreaterThanOrEqual(3);
             }
           }
@@ -113,8 +117,9 @@ describe("generatePlan", () => {
   it("puts athletic power work first and scales sets by experience", () => {
     const plan = generatePlan({ ...base, physique_goal: "athletic" });
     for (const d of plan.days) expect(EXERCISE_BY_ID[d.exercises[0].exercise_id].category).toBe("plyo");
-    const beg = generatePlan({ ...base, experience: "beginner" }).days[0].exercises[0].sets;
-    const adv = generatePlan({ ...base, experience: "advanced" }).days[0].exercises[0].sets;
+    const daySets = (experience: "beginner" | "advanced") => generatePlan({ ...base, experience }).days[0].exercises.reduce((n, e) => n + e.sets, 0);
+    const beg = daySets("beginner");
+    const adv = daySets("advanced");
     expect(beg).toBeLessThan(adv);
   });
 

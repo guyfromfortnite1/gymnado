@@ -88,7 +88,7 @@ export async function generatePlanAction(today: string): Promise<Result<{ aiNote
         const sane = a.sets >= 1 && a.sets <= 8 && a.rest_sec >= 0 && a.rest_sec <= 600 && a.reps.length > 0 && a.reps.length <= 30;
         if (target && sane) Object.assign(target, { sets: a.sets, reps: a.reps, rest_sec: a.rest_sec });
       }
-      for (const d of days) d.exercises = fitToTime(d.exercises); // AI tweaks must still fit in an hour
+      for (const d of days) d.exercises = fitToTime(d.exercises, profile.target_muscles); // AI tweaks must still fit the session limits
     } catch (e) {
       aiNote = `Saved the rule-based plan without AI tuning: ${aiError(e)}`;
     }

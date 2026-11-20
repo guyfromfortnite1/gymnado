@@ -1,6 +1,6 @@
 import { EXERCISE_BY_ID, EXERCISES, isAvailable, type Exercise } from "./exercises";
 import { chooseSplit, type Slot } from "./splits";
-import type { Equipment, Experience, Goal, PlanDay, PlanExercise, Profile } from "./types";
+import type { Equipment, Experience, Goal, Muscle, PlanDay, PlanExercise, Profile } from "./types";
 
 type PlanInput = Pick<Profile, "training_days" | "physique_goal" | "experience" | "target_muscles" | "sports" | "missing_equipment">;
 
@@ -13,9 +13,11 @@ const SCHEMES: Record<Goal, { compound: Scheme; isolation: Scheme }> = {
   athletic: { compound: [4, "5-8", 120], isolation: [3, "8-12", 60] },
 };
 
-// ---- Session length: every day should fit in about an hour ----
+// ---- Session size: every day stays short and manageable ----
 
-export const MAX_SESSION_MIN = 60;
+export const MAX_SESSION_MIN = 50;
+export const MAX_EXERCISES = 6;
+export const MAX_SETS = 18;
 const WARM_UP_MIN = 5;
 const WORK_SEC_PER_SET = 40;
 const SETUP_MIN_PER_EXERCISE = 1;
@@ -32,25 +34,41 @@ export function estimateMinutes(exercises: PlanExercise[]): number {
 }
 
 /**
- * Trims a session to MAX_SESSION_MIN: first cut big lifts down to 3 sets, then drop
- * isolation, then compound lifts (latest first, keeping at least 3 exercises).
- * Sport, jump (plyo) and conditioning work is never dropped.
+ * Trims a session to at most MAX_EXERCISES exercises, MAX_SETS sets and MAX_SESSION_MIN minutes.
+ * Drops extra isolation, then compound lifts (latest first, keeping at least 3 exercises) and cuts
+ * big lifts down to 3 sets. Sport, jump (plyo) and conditioning work is dropped only as a last resort.
  */
-export function fitToTime(exercises: PlanExercise[]): PlanExercise[] {
+export function fitToTime(exercises: PlanExercise[], keepMuscles: Muscle[] = []): PlanExercise[] {
   const out = exercises.map((x) => ({ ...x }));
-  const over = () => estimateMinutes(out) > MAX_SESSION_MIN;
-  while (over()) {
+  const totalSets = () => out.reduce((n, x) => n + (EXERCISE_BY_ID[x.exercise_id]?.category === "conditioning" ? 0 : x.sets), 0);
+  const tooLong = () => estimateMinutes(out) > MAX_SESSION_MIN || totalSets() > MAX_SETS;
+  const over = () => tooLong() || out.length > MAX_EXERCISES;
+  // Latest non-sport exercise of this category; exercises for prioritized muscles go last.
+  const droppable = (cat: "isolation" | "compound") => {
+    for (const protectPriority of [true, false]) {
+      for (let i = out.length - 1; i >= 0; i--) {
+        const e = EXERCISE_BY_ID[out[i].exercise_id];
+        if (e?.category !== cat || e.sports.length > 0) continue;
+        if (protectPriority && keepMuscles.includes(e.muscles[0])) continue;
+        return i;
+      }
+    }
+    return -1;
+  };
+  // Too many exercises: drop extras first.
+  for (const cat of ["isolation", "compound"] as const) {
+    while (out.length > MAX_EXERCISES) {
+      const i = droppable(cat);
+      if (i < 0) break;
+      out.splice(i, 1);
+    }
+  }
+  // Too long: trim sets, then drop more.
+  while (tooLong()) {
     const biggest = out.filter((x) => x.sets > 3).sort((a, b) => b.sets - a.sets)[0];
     if (!biggest) break;
     biggest.sets -= 1;
   }
-  const droppable = (cat: "isolation" | "compound") => {
-    for (let i = out.length - 1; i >= 0; i--) {
-      const e = EXERCISE_BY_ID[out[i].exercise_id];
-      if (e?.category === cat && e.sports.length === 0) return i;
-    }
-    return -1;
-  };
   for (const cat of ["isolation", "compound"] as const) {
     while (over() && out.length > 3) {
       const i = droppable(cat);
@@ -129,7 +147,7 @@ export function generatePlan(p: PlanInput): { splitName: string; days: PlanDay[]
     if (p.physique_goal === "lean") pick(pool.filter((e) => e.category === "conditioning"), dayIndex);
 
     const ordered = [...picked].sort((a, b) => ORDER[a.category] - ORDER[b.category]);
-    return { name: day.name, exercises: fitToTime(ordered.map((e) => prescribe(e, p.physique_goal, p.experience))) };
+    return { name: day.name, exercises: fitToTime(ordered.map((e) => prescribe(e, p.physique_goal, p.experience)), p.target_muscles) };
   });
 
   return { splitName: split.name, days };

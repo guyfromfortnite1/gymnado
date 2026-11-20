@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import MuscleMap from "@/components/MuscleMap";
-import PremiumSurface, { PremiumBadge } from "@/components/PremiumSurface";
+import PremiumLock from "@/components/PremiumLock";
 import { useScanStatus } from "@/lib/hooks";
 import { createClient } from "@/lib/supabase/client";
 import { cmToFtIn, ftInToCm, kgToLb, lbToKg } from "@/lib/units";
@@ -23,6 +23,8 @@ const DEFAULTS: Draft = {
   units: "imperial", sex: "male", age: 0, height_cm: 0, weight_kg: 0, activity_level: null,
   experience: null, physique_goal: null, target_muscles: [], sports: [], missing_equipment: [], training_days: [],
 };
+
+const DRAFT_KEY = "gymnado-plan-draft";
 
 const pickOne = (v: unknown) => (v ? null : "Please pick an option to continue.");
 
@@ -99,6 +101,23 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
     window.addEventListener("focus", reloadPremium);
     return () => window.removeEventListener("focus", reloadPremium);
   }, [reloadPremium]);
+
+  // Keep unfinished answers in this browser tab, so leaving for the Premium tab (or a reload) doesn't lose them.
+  useEffect(() => {
+    try {
+      const d = JSON.parse(sessionStorage.getItem(DRAFT_KEY) ?? "null");
+      if (!d?.p) return;
+       
+      setP(d.p);
+      setHeight(d.height);
+      setWeight(d.weight);
+      setStep(d.step);
+       
+    } catch {}
+  }, []);
+  useEffect(() => {
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ p, height, weight, step }));
+  }, [p, height, weight, step]);
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setP((prev) => ({ ...prev, [k]: v }));
 
@@ -249,17 +268,10 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
       title: "Do you play any sports?",
       hint: premium ? "Optional. Pick as many as you like. Each one adds a sport-specific exercise to every workout." : undefined,
       body: !premium ? (
-        <PremiumSurface className="space-y-3">
-          <PremiumBadge />
-          <p className="text-lg font-semibold">Build a physique for your sport</p>
-          <p className="text-sm text-ice/90">
-            Premium adds sport-specific exercises to every workout, for basketball, soccer, boxing, running, tennis and more.
-          </p>
-          <a href="/premium" target="_blank" rel="noopener" className="inline-flex rounded-xl bg-white px-4 py-2 font-semibold text-navy transition hover:bg-ice">
-            Upgrade to unlock
-          </a>
-          <p className="text-xs text-ice/70">Opens in a new tab so you keep your answers. Or finish below without it.</p>
-        </PremiumSurface>
+        <PremiumLock title="Build a physique for your sport">
+          Premium adds sport-specific exercises to every workout, for basketball, soccer, boxing, running, tennis and more.
+          <span className="mt-1 block text-xs text-ice/70">Your answers are saved, so you can come back and finish. Or finish below without it.</span>
+        </PremiumLock>
       ) : (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -298,6 +310,7 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
       ...p, sports: premium ? p.sports : [], id: data.user!.id, height_cm: roundedHeight(), weight_kg: roundedWeight(),
       training_days: [...p.training_days].sort(), updated_at: new Date().toISOString(),
     });
+    if (!err) sessionStorage.removeItem(DRAFT_KEY);
     if (!err && (await onSaved()) === "leaving") return; // keep the busy card up while the page navigates away
     await transition(() => setBusy(false));
     if (err) setError(err.message);

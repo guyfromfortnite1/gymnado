@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import InstallCard from "@/components/InstallCard";
@@ -27,7 +28,11 @@ export default function ProfilePage() {
   if (!profile) return <PageSkeleton />;
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Profile</h1>
+      {/* The tab bar is hidden while editing the plan answers, so give a way back. */}
+      <div className="flex items-center gap-3">
+        <Link href="/" className="rounded-lg px-2 py-1 text-sm font-medium text-teal transition hover:bg-cyan">← Back</Link>
+        <h1 className="flex-1 text-2xl font-bold">Profile</h1>
+      </div>
       <InstallCard />
       {saved && (
         <div className="card flex flex-wrap items-center gap-3 border-surf">

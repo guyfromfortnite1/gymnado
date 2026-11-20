@@ -173,10 +173,12 @@ export default function WorkoutRunner() {
               </div>
             )
           ) : (
-            <PremiumSurface className="flex items-center gap-3 py-3">
-              <PremiumBadge />
-              <span className="text-sm">Log your weights and see your progress with Premium.</span>
-            </PremiumSurface>
+            <Link href="/premium" className="block rounded-2xl transition duration-200 hover:scale-[1.02]">
+              <PremiumSurface className="flex items-center gap-3 py-3">
+                <PremiumBadge />
+                <span className="text-sm">Log your weights and see your progress with Premium.</span>
+              </PremiumSurface>
+            </Link>
           )}
           <button className="btn w-full py-4 text-lg" onClick={completeSet} disabled={saving}>
             {saving ? "Saving…" : "✓ Done"}

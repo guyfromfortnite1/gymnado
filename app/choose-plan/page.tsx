@@ -42,7 +42,7 @@ export default function ChoosePlanPage() {
   return (
     <div className={`mx-auto mt-6 max-w-2xl space-y-5 ${leaving ? "fade-out" : ""}`}>
       <div className="text-center">
-        <p className="flex justify-center text-4xl tracking-tight"><Logo size={52} /></p>
+        <p className="flex justify-center text-4xl tracking-tight"><Logo size={44} /></p>
         <h1 className="mt-1 text-2xl font-bold">Choose your plan</h1>
         <p className="text-twilight/70">You can upgrade anytime from the Premium tab.</p>
       </div>

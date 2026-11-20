@@ -6,7 +6,7 @@ import { LEGAL_UPDATED } from "@/lib/site";
 export default function LegalPage({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <article className="mx-auto max-w-2xl space-y-4 pb-10">
-      <Link href="/" className="inline-block"><Logo size={32} className="text-xl" /></Link>
+      <Link href="/" className="inline-block"><Logo size={26} /></Link>
       <h1 className="text-3xl font-bold">{title}</h1>
       <p className="text-sm text-twilight/60">Last updated {LEGAL_UPDATED}</p>
       <div className="legal space-y-3 leading-relaxed">{children}</div>
