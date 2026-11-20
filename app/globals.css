@@ -46,3 +46,27 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .fade-in, .fade-out { animation: none; }
 }
+
+/* Food photo scanner: a glowing blue line sweeping up and down over a faint grid. */
+.scan-grid {
+  background-image:
+    linear-gradient(rgb(0 180 216 / 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(0 180 216 / 0.18) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--color-surf);
+  box-shadow: 0 0 14px 4px rgb(0 180 216 / 0.75), 0 0 40px 10px rgb(0 180 216 / 0.35);
+  animation: scan-sweep 1.6s ease-in-out infinite alternate;
+}
+@keyframes scan-sweep {
+  from { top: 0; }
+  to { top: calc(100% - 3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scan-line { animation: none; top: 50%; }
+}

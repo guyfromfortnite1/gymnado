@@ -5,6 +5,9 @@ import { analyzeFoodPhoto, suggestSwap, tunePlan } from "@/lib/ai";
 import { buildSchedule } from "@/lib/dates";
 import { EXERCISE_BY_ID } from "@/lib/exercises";
 import { generatePlan, prescribe, swapCandidates } from "@/lib/generate";
+import { headers } from "next/headers";
+import { FREE_SCANS, isPremiumStatus } from "@/lib/premium";
+import { getPremiumPriceId, getStripe } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import { SPORTS, type FoodItem, type PlanDay, type PlanExercise, type Profile } from "@/lib/types";
 
@@ -22,7 +25,14 @@ async function session() {
   const { data } = await supabase.auth.getUser();
   if (!data.user) throw new Error("Not signed in.");
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single<Profile>();
-  return { supabase, profile };
+  return { supabase, profile, user: data.user };
+}
+
+type Supabase = Awaited<ReturnType<typeof createClient>>;
+
+async function getSubscription(supabase: Supabase) {
+  const { data } = await supabase.from("subscriptions").select("status, stripe_customer_id").maybeSingle<{ status: string; stripe_customer_id: string | null }>();
+  return data;
 }
 
 const summarize = (p: Profile) => ({
@@ -120,13 +130,61 @@ const DATA_URL = /^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=]+)$
 
 export async function analyzeFoodAction(dataUrl: string): Promise<Result<{ items: FoodItem[] }>> {
   try {
-    await session(); // signed-in users only
+    const { supabase } = await session(); // signed-in users only
     const m = DATA_URL.exec(dataUrl);
     if (!m) return { ok: false, error: "Unsupported image. Use a JPEG, PNG, or WebP photo." };
+
+    // Free users get FREE_SCANS analyses in total; Premium is unlimited.
+    if (!isPremiumStatus((await getSubscription(supabase))?.status)) {
+      const { count } = await supabase.from("food_scans").select("id", { count: "exact", head: true });
+      if ((count ?? 0) >= FREE_SCANS) return { ok: false, error: `You've used all ${FREE_SCANS} free scans. Upgrade to Premium for unlimited scans.` };
+    }
+
     const { items } = await analyzeFoodPhoto(m[2], m[1] as "image/jpeg");
     if (!items.length) return { ok: false, error: "No food found in that photo. Try a clearer shot, or add items manually." };
+    const { error } = await supabase.from("food_scans").insert({});
+    if (error) return { ok: false, error: error.message };
     return { ok: true, items };
   } catch (e) {
     return { ok: false, error: aiError(e) };
+  }
+}
+
+const siteOrigin = async () => (await headers()).get("origin") ?? "http://localhost:3000";
+
+/** Starts a Stripe Checkout for Premium and returns the payment page URL. */
+export async function startCheckoutAction(): Promise<Result<{ url: string }>> {
+  try {
+    const { supabase, user } = await session();
+    const sub = await getSubscription(supabase);
+    if (isPremiumStatus(sub?.status)) return { ok: false, error: "You're already Premium." };
+
+    const origin = await siteOrigin();
+    const checkout = await getStripe().checkout.sessions.create({
+      mode: "subscription",
+      line_items: [{ price: await getPremiumPriceId(), quantity: 1 }],
+      ...(sub?.stripe_customer_id ? { customer: sub.stripe_customer_id } : { customer_email: user.email }),
+      client_reference_id: user.id,
+      // The webhook reads user_id from the subscription to know who paid.
+      subscription_data: { metadata: { user_id: user.id } },
+      success_url: `${origin}/premium?success=1`,
+      cancel_url: `${origin}/premium?canceled=1`,
+    });
+    return checkout.url ? { ok: true, url: checkout.url } : { ok: false, error: "Couldn't start checkout. Try again." };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Couldn't start checkout." };
+  }
+}
+
+/** Opens Stripe's page where Premium users can update their card or cancel. */
+export async function manageBillingAction(): Promise<Result<{ url: string }>> {
+  try {
+    const { supabase } = await session();
+    const customer = (await getSubscription(supabase))?.stripe_customer_id;
+    if (!customer) return { ok: false, error: "No subscription found." };
+    const portal = await getStripe().billingPortal.sessions.create({ customer, return_url: `${await siteOrigin()}/premium` });
+    return { ok: true, url: portal.url };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Couldn't open billing." };
   }
 }

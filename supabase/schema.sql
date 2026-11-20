@@ -58,6 +58,23 @@ create table public.food_logs (
 );
 create index on public.food_logs (user_id, date);
 
+-- Premium: one row per user, written only by the server (Stripe webhook) with the secret key.
+create table public.subscriptions (
+  user_id uuid primary key references auth.users on delete cascade,
+  stripe_customer_id text unique,
+  stripe_subscription_id text,
+  status text not null,
+  updated_at timestamptz not null default now()
+);
+
+-- One row per successful food photo analysis; free users get a limited number in total.
+create table public.food_scans (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users on delete cascade,
+  created_at timestamptz not null default now()
+);
+create index on public.food_scans (user_id);
+
 alter table public.profiles enable row level security;
 alter table public.plans enable row level security;
 alter table public.plan_days enable row level security;
@@ -69,3 +86,10 @@ create policy "own plans" on public.plans for all using (auth.uid() = user_id) w
 create policy "own plan days" on public.plan_days for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own workouts" on public.scheduled_workouts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own food" on public.food_logs for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+alter table public.subscriptions enable row level security;
+alter table public.food_scans enable row level security;
+-- Users can read their subscription but never change it; they can add scans but never delete them.
+create policy "read own subscription" on public.subscriptions for select using (auth.uid() = user_id);
+create policy "read own scans" on public.food_scans for select using (auth.uid() = user_id);
+create policy "add own scans" on public.food_scans for insert with check (auth.uid() = user_id);

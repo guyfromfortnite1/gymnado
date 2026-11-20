@@ -10,12 +10,14 @@ const LINKS = [
   { href: "/schedule", label: "Schedule" },
   { href: "/food", label: "Food" },
   { href: "/profile", label: "Profile" },
+  { href: "/premium", label: "Premium" },
 ];
+const NO_NAV = ["/login", "/signup", "/forgot-password", "/reset-password"];
 
 export default function Nav() {
   const path = usePathname();
   const router = useRouter();
-  if (path === "/login" || path === "/signup") return null;
+  if (NO_NAV.includes(path)) return null;
 
   async function signOut() {
     await createClient().auth.signOut();

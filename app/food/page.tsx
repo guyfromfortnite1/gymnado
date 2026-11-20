@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import MacroBars from "@/components/MacroBars";
 import { analyzeFoodAction } from "@/app/actions";
 import { dailyTargets, sumMacros } from "@/lib/macros";
+import { wait } from "@/lib/motion";
+import { FREE_SCANS, PREMIUM_PRICE_LABEL } from "@/lib/premium";
 import { createClient } from "@/lib/supabase/client";
-import { useProfile, useToday } from "@/lib/hooks";
+import { useProfile, useScanStatus, useToday } from "@/lib/hooks";
 import type { FoodItem } from "@/lib/types";
 
 type Meal = { id: string; items: FoodItem[]; calories: number; protein_g: number; carbs_g: number; fat_g: number; created_at: string };
@@ -44,6 +47,11 @@ export default function FoodPage() {
   const [items, setItems] = useState<FoodItem[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const { status: scans, reload: reloadScans } = useScanStatus();
+  const scansLeft = scans ? Math.max(0, FREE_SCANS - scans.used) : 0;
+  const outOfScans = !!scans && !scans.premium && scansLeft === 0;
 
   const load = useCallback(async () => {
     if (!today) return;
@@ -68,12 +76,28 @@ export default function FoodPage() {
     }
   }
 
+  // While the AI works, the percentage eases toward 95%; it jumps to 100% when the answer arrives.
+  useEffect(() => {
+    if (!scanning) return;
+    const id = setInterval(() => setProgress((p) => (p < 95 ? p + (95 - p) * 0.04 : p)), 100);
+    return () => clearInterval(id);
+  }, [scanning]);
+
   async function analyze() {
     if (!photo) return;
     setBusy(true);
     setError(null);
+    setItems([]);
+    setProgress(0);
+    setScanning(true);
     const res = await analyzeFoodAction(photo);
+    if (res.ok) {
+      setProgress(100);
+      await wait(600); // let "100%" show for a moment
+    }
+    setScanning(false);
     setBusy(false);
+    reloadScans();
     if (res.ok) setItems(res.items.map((i) => ({ ...i, calories: Math.round(i.calories), protein_g: Math.round(i.protein_g), carbs_g: Math.round(i.carbs_g), fat_g: Math.round(i.fat_g) })));
     else setError(res.error);
   }
@@ -119,18 +143,49 @@ export default function FoodPage() {
           <button className="btn-secondary" onClick={() => setItems([...items, { ...EMPTY }])}>+ Add item manually</button>
         </div>
 
+        {scans && (
+          <p className="text-sm text-twilight/60">
+            {scans.premium ? "Premium: unlimited photo scans." : <>{scansLeft} of {FREE_SCANS} free photo scans left. <Link href="/premium" className="font-medium text-teal underline">Go Premium</Link></>}
+          </p>
+        )}
+
         {photo && (
-          <div className="flex flex-wrap items-end gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element -- local data URL preview */}
-            <img src={photo} alt="Meal preview" className="max-h-48 rounded-xl border border-frost" />
-            <button className="btn" onClick={analyze} disabled={busy}>{busy ? "Analyzing…" : "Analyze macros"}</button>
+          <div className="space-y-3">
+            <div className="relative w-fit overflow-hidden rounded-xl border border-frost">
+              {/* eslint-disable-next-line @next/next/no-img-element -- local data URL preview */}
+              <img src={photo} alt="Meal preview" className={`block max-h-72 transition ${scanning ? "brightness-90" : ""}`} />
+              {scanning && (
+                <div className="scan-grid absolute inset-0 bg-twilight/20" aria-hidden>
+                  <div className="scan-line" />
+                </div>
+              )}
+            </div>
+            {scanning ? (
+              <div className="max-w-sm space-y-1" role="status">
+                <div className="flex justify-between text-sm font-medium text-teal">
+                  <span>Analyzing food…</span>
+                  <span>{Math.floor(progress)}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-cyan">
+                  <div className="h-full rounded-full bg-surf transition-all duration-200" style={{ width: `${progress}%` }} />
+                </div>
+              </div>
+            ) : outOfScans ? (
+              <div className="fade-in max-w-sm space-y-2 rounded-xl border border-teal p-3">
+                <p className="font-semibold">You&apos;ve used all {FREE_SCANS} free scans</p>
+                <p className="text-sm text-twilight/70">Get unlimited photo scans with Premium, or add items manually.</p>
+                <Link href="/premium" className="btn w-full">Upgrade for {PREMIUM_PRICE_LABEL}</Link>
+              </div>
+            ) : (
+              items.length === 0 && <button className="btn" onClick={analyze} disabled={busy || !scans}>Analyze macros</button>
+            )}
           </div>
         )}
 
         {error && <p className="rounded-lg bg-cyan p-2 text-sm font-medium">{error}</p>}
 
         {items.length > 0 && (
-          <div className="space-y-2">
+          <div className="fade-in space-y-2">
             <p className="text-sm text-twilight/60">Estimates. Adjust anything that looks off before saving.</p>
             {items.map((it, idx) => (
               <div key={idx} className="grid grid-cols-4 gap-2 rounded-xl border border-frost p-2 sm:grid-cols-7">
@@ -148,7 +203,7 @@ export default function FoodPage() {
               </div>
             ))}
             <div className="flex items-center gap-3">
-              <button className="btn" onClick={saveMeal} disabled={busy}>Save meal</button>
+              <button className="btn" onClick={saveMeal} disabled={busy || scanning}>Save meal</button>
               <span className="text-sm text-teal">{Math.round(sumMacros(items).calories)} kcal total</span>
             </div>
           </div>

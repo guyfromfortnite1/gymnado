@@ -1,10 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/signup"];
+// Signed-out only: signed-in users are sent home.
+const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password"];
+// Anyone: the reset link signs the user in on arrival, and Stripe's webhook has no session.
+const OPEN_PATHS = ["/reset-password", "/api/stripe/webhook"];
 
 // Refreshes the Supabase session cookie on every request and sends signed-out users to /login.
 export async function proxy(request: NextRequest) {
+  if (OPEN_PATHS.includes(request.nextUrl.pathname)) return NextResponse.next({ request });
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {

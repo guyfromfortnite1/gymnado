@@ -34,11 +34,11 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
   const isLogin = mode === "login";
   return (
-    <div className={`mx-auto mt-10 max-w-sm ${leaving ? "fade-out" : "fade-in"}`}>
+    <div className={`mx-auto mt-10 max-w-sm ${leaving ? "fade-out" : ""}`}>
       <h1 className="mb-1 text-center text-3xl font-bold">
         Gym<span className="text-teal">Nado</span>
       </h1>
-      <p className="mb-6 text-center text-twilight/70">{isLogin ? "Welcome back." : "Create your account."}</p>
+      <p className="mb-6 text-center text-twilight/70">Progress starts here.</p>
       <form onSubmit={submit} className="card space-y-4">
         <div>
           <label className="label" htmlFor="email">Email</label>
@@ -47,6 +47,9 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         <div>
           <label className="label" htmlFor="password">Password</label>
           <input id="password" type="password" required minLength={6} className="input" value={password} onChange={(e) => setPassword(e.target.value)} />
+          {isLogin && (
+            <Link href="/forgot-password" className="mt-1 inline-block text-sm text-teal hover:underline">Forgot password?</Link>
+          )}
         </div>
         {message && <p className="rounded-lg bg-cyan p-2 text-sm">{message}</p>}
         <button className="btn w-full" disabled={busy || leaving}>{busy ? "…" : isLogin ? "Log in" : "Sign up"}</button>
