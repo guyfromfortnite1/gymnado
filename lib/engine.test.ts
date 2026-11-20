@@ -114,7 +114,7 @@ describe("generatePlan", () => {
       return days.reduce((n, d) => n + estimateMinutes(d.exercises), 0) / days.length;
     };
     expect(avgMinutes("beginner")).toBeLessThan(avgMinutes("advanced"));
-    expect(avgMinutes("beginner")).toBeLessThanOrEqual(30);
+    expect(avgMinutes("beginner")).toBeLessThanOrEqual(25);
   });
 
   it("fitToTime trims sets before dropping exercises", () => {

@@ -40,7 +40,7 @@ export function tunePlan(profileSummary: object, plan: object): Promise<Tuning> 
     `${COACH}
 A rules engine has already chosen this athlete's split and exercises. Your job:
 1. "explanation": 3-6 sentences on why this split and these exercises fit their physique goal, prioritized muscles, sports, experience, and schedule.
-2. "adjustments": fine-tune sets, reps (a short string like "8-10" or "30 s"), and rest_sec for exercises already in the plan, to suit their goal and experience. Keep sessions short: about 30 minutes for beginners, 40 for intermediate and 45 for advanced, including a 5-minute warm-up. Keep sets moderate (usually 2-3, at most 4 for main lifts) and rests short (45-120 s). Only list exercises you want to change. Never add, remove, or rename exercises; use the exact day_index and exercise_id from the plan.`,
+2. "adjustments": fine-tune sets, reps (a short string like "8-10" or "30 s"), and rest_sec for exercises already in the plan, to suit their goal and experience. Keep sessions short: about 25 minutes for beginners, 32 for intermediate and 38 for advanced, including a 5-minute warm-up. Keep sets moderate (usually 2-3, at most 4 for main lifts) and rests short (45-120 s). Only list exercises you want to change. Never add, remove, or rename exercises; use the exact day_index and exercise_id from the plan.`,
     `Athlete profile:\n${JSON.stringify(profileSummary, null, 2)}\n\nPlan:\n${JSON.stringify(plan, null, 2)}`,
   );
 }

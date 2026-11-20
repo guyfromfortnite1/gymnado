@@ -1,6 +1,6 @@
 import { EXERCISE_BY_ID, EXERCISES, isAvailable, type Exercise } from "./exercises";
 import { chooseSplit, type Slot } from "./splits";
-import type { Equipment, Experience, Goal, Muscle, PlanDay, PlanExercise, Profile } from "./types";
+import type { Equipment, Experience, Goal, Muscle, PlanDay, PlanExercise, Profile, Sport } from "./types";
 
 type PlanInput = Pick<Profile, "training_days" | "physique_goal" | "experience" | "target_muscles" | "sports" | "missing_equipment">;
 
@@ -17,9 +17,9 @@ const SCHEMES: Record<Goal, { compound: Scheme; isolation: Scheme }> = {
 
 /** Per-day limits by experience: max exercises, total working sets, and estimated minutes. */
 export const SESSION_LIMITS: Record<Experience, { exercises: number; sets: number; minutes: number }> = {
-  beginner: { exercises: 4, sets: 10, minutes: 30 },
-  intermediate: { exercises: 5, sets: 14, minutes: 40 },
-  advanced: { exercises: 5, sets: 16, minutes: 45 },
+  beginner: { exercises: 3, sets: 8, minutes: 25 },
+  intermediate: { exercises: 4, sets: 11, minutes: 32 },
+  advanced: { exercises: 4, sets: 13, minutes: 38 },
 };
 const WARM_UP_MIN = 5;
 const WORK_SEC_PER_SET = 40;
@@ -39,21 +39,25 @@ export function estimateMinutes(exercises: PlanExercise[]): number {
 /**
  * Trims a session to the SESSION_LIMITS for this experience level (exercises, sets, minutes).
  * Drops extra isolation, then compound lifts (latest first, keeping at least 3 exercises) and cuts
- * big lifts down to 3 sets. Sport, jump (plyo) and conditioning work is dropped only as a last resort.
+ * big lifts down to 3 sets. Work for the user's sports, jumps (plyo) and conditioning are dropped only as a last resort.
  */
-export function fitToTime(exercises: PlanExercise[], keepMuscles: Muscle[] = [], experience: Experience = "intermediate"): PlanExercise[] {
+export function fitToTime(
+  exercises: PlanExercise[],
+  { keepMuscles = [], keepSports = [], experience = "intermediate" }: { keepMuscles?: Muscle[]; keepSports?: Sport[]; experience?: Experience } = {},
+): PlanExercise[] {
   const limit = SESSION_LIMITS[experience];
   const out = exercises.map((x) => ({ ...x }));
   const totalSets = () => out.reduce((n, x) => n + (EXERCISE_BY_ID[x.exercise_id]?.category === "conditioning" ? 0 : x.sets), 0);
   const tooLong = () => estimateMinutes(out) > limit.minutes || totalSets() > limit.sets;
   const over = () => tooLong() || out.length > limit.exercises;
   // Drop order: non-priority isolation, non-priority compound, then priority isolation, priority compound.
-  // Sport-tagged exercises are never picked here. Returns the latest matching index, or -1.
+  // Work for the user's own sports is never picked here. Returns the latest matching index, or -1.
   const DROP_ORDER = [["isolation", false], ["compound", false], ["isolation", true], ["compound", true]] as const;
   const droppable = (cat: "isolation" | "compound", priority: boolean) => {
     for (let i = out.length - 1; i >= 0; i--) {
       const e = EXERCISE_BY_ID[out[i].exercise_id];
-      if (e?.category === cat && e.sports.length === 0 && keepMuscles.includes(e.muscles[0]) === priority) return i;
+      const forMySport = e?.sports.some((sp) => keepSports.includes(sp));
+      if (e?.category === cat && !forMySport && keepMuscles.includes(e.muscles[0]) === priority) return i;
     }
     return -1;
   };
@@ -147,7 +151,7 @@ export function generatePlan(p: PlanInput): { splitName: string; days: PlanDay[]
     if (p.physique_goal === "lean") pick(pool.filter((e) => e.category === "conditioning"), dayIndex);
 
     const ordered = [...picked].sort((a, b) => ORDER[a.category] - ORDER[b.category]);
-    return { name: day.name, exercises: fitToTime(ordered.map((e) => prescribe(e, p.physique_goal, p.experience)), p.target_muscles, p.experience) };
+    return { name: day.name, exercises: fitToTime(ordered.map((e) => prescribe(e, p.physique_goal, p.experience)), { keepMuscles: p.target_muscles, keepSports: p.sports, experience: p.experience }) };
   });
 
   return { splitName: split.name, days };
