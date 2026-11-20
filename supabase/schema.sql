@@ -1,7 +1,7 @@
--- Run once in the Supabase dashboard → SQL Editor → New query → Run.
+-- Run in the Supabase dashboard → SQL Editor → New query → Run. Safe to run again: existing tables are kept.
 -- Every table has row-level security: a signed-in user can only read and write their own rows.
 
-create table public.profiles (
+create table if not exists public.profiles (
   id uuid primary key references auth.users on delete cascade,
   units text not null default 'imperial' check (units in ('imperial', 'metric')),
   sex text not null check (sex in ('male', 'female')),
@@ -18,7 +18,7 @@ create table public.profiles (
   updated_at timestamptz not null default now()
 );
 
-create table public.plans (
+create table if not exists public.plans (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
   split_name text not null,
@@ -27,7 +27,7 @@ create table public.plans (
   created_at timestamptz not null default now()
 );
 
-create table public.plan_days (
+create table if not exists public.plan_days (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
   plan_id uuid not null references public.plans on delete cascade,
@@ -36,16 +36,16 @@ create table public.plan_days (
   exercises jsonb not null -- [{exercise_id, sets, reps, rest_sec}]
 );
 
-create table public.scheduled_workouts (
+create table if not exists public.scheduled_workouts (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
   plan_day_id uuid not null references public.plan_days on delete cascade,
   date date not null,
   status text not null default 'planned' check (status in ('planned', 'done', 'skipped'))
 );
-create index on public.scheduled_workouts (user_id, date);
+create index if not exists scheduled_workouts_user_id_date_idx on public.scheduled_workouts (user_id, date);
 
-create table public.food_logs (
+create table if not exists public.food_logs (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
   date date not null,
@@ -56,10 +56,10 @@ create table public.food_logs (
   fat_g numeric not null,
   created_at timestamptz not null default now()
 );
-create index on public.food_logs (user_id, date);
+create index if not exists food_logs_user_id_date_idx on public.food_logs (user_id, date);
 
 -- Premium: one row per user, written only by the server (Stripe webhook) with the secret key.
-create table public.subscriptions (
+create table if not exists public.subscriptions (
   user_id uuid primary key references auth.users on delete cascade,
   stripe_customer_id text unique,
   stripe_subscription_id text,
@@ -68,12 +68,12 @@ create table public.subscriptions (
 );
 
 -- One row per successful food photo analysis; free users get a limited number in total.
-create table public.food_scans (
+create table if not exists public.food_scans (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
   created_at timestamptz not null default now()
 );
-create index on public.food_scans (user_id);
+create index if not exists food_scans_user_id_idx on public.food_scans (user_id);
 
 alter table public.profiles enable row level security;
 alter table public.plans enable row level security;
@@ -81,15 +81,23 @@ alter table public.plan_days enable row level security;
 alter table public.scheduled_workouts enable row level security;
 alter table public.food_logs enable row level security;
 
+drop policy if exists "own profile" on public.profiles;
 create policy "own profile" on public.profiles for all using (auth.uid() = id) with check (auth.uid() = id);
+drop policy if exists "own plans" on public.plans;
 create policy "own plans" on public.plans for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "own plan days" on public.plan_days;
 create policy "own plan days" on public.plan_days for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "own workouts" on public.scheduled_workouts;
 create policy "own workouts" on public.scheduled_workouts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "own food" on public.food_logs;
 create policy "own food" on public.food_logs for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 alter table public.subscriptions enable row level security;
 alter table public.food_scans enable row level security;
 -- Users can read their subscription but never change it; they can add scans but never delete them.
+drop policy if exists "read own subscription" on public.subscriptions;
 create policy "read own subscription" on public.subscriptions for select using (auth.uid() = user_id);
+drop policy if exists "read own scans" on public.food_scans;
 create policy "read own scans" on public.food_scans for select using (auth.uid() = user_id);
+drop policy if exists "add own scans" on public.food_scans;
 create policy "add own scans" on public.food_scans for insert with check (auth.uid() = user_id);
