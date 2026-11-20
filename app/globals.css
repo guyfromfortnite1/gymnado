@@ -47,6 +47,40 @@ body {
   .fade-in, .fade-out { animation: none; }
 }
 
+/* Premium look: deep blue with a slow shimmer and twinkling diamonds (components/PremiumSurface.tsx). */
+.premium-surface {
+  position: relative;
+  overflow: hidden;
+  color: white;
+  background: linear-gradient(135deg, #03045e 0%, #0a1a7a 45%, #023e8a 100%);
+}
+.premium-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 0.14) 50%, transparent 70%);
+  background-size: 250% 100%;
+  animation: premium-shimmer 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes premium-shimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -100% 0; }
+}
+.premium-sparkle {
+  position: absolute;
+  pointer-events: none;
+  animation: premium-twinkle 2.4s ease-in-out infinite;
+}
+@keyframes premium-twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.6) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.1) rotate(15deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .premium-surface::before, .premium-sparkle { animation: none; }
+  .premium-sparkle { opacity: 0.6; }
+}
+
 /* Food photo scanner: a glowing blue line sweeping up and down over a faint grid. */
 .scan-grid {
   background-image:

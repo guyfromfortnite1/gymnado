@@ -12,7 +12,7 @@ const LINKS = [
   { href: "/profile", label: "Profile" },
   { href: "/premium", label: "Premium" },
 ];
-const NO_NAV = ["/login", "/signup", "/forgot-password", "/reset-password"];
+const NO_NAV = ["/login", "/signup", "/forgot-password", "/reset-password", "/choose-plan"];
 
 export default function Nav() {
   const path = usePathname();

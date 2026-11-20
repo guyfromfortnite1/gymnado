@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { fadeOutMs, wait } from "@/lib/motion";
+import { isPremiumStatus } from "@/lib/premium";
 
 export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
@@ -26,9 +27,16 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
     setBusy(false);
     if (error) return setMessage(error.message);
     if (!data.session) return setMessage("Sign-up needs email confirmation turned off in Supabase (Authentication → Sign In / Providers → Email → Confirm email).");
+    // Ask Free or Premium once: right after sign-up, or on login if they haven't chosen and aren't Premium.
+    let next = "/choose-plan";
+    if (mode === "login" && data.user?.user_metadata?.plan_chosen) next = "/";
+    else if (mode === "login") {
+      const { data: sub } = await createClient().from("subscriptions").select("status").maybeSingle<{ status: string }>();
+      if (isPremiumStatus(sub?.status)) next = "/";
+    }
     setLeaving(true);
     await wait(fadeOutMs());
-    router.replace(mode === "login" ? "/" : "/onboarding");
+    router.replace(next);
     router.refresh();
   }
 

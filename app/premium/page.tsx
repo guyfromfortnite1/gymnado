@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { manageBillingAction, startCheckoutAction } from "@/app/actions";
 import { useScanStatus } from "@/lib/hooks";
@@ -25,7 +26,7 @@ export default function PremiumPage() {
     return () => clearInterval(id);
   }, [notice, status?.premium, reload]);
 
-  async function go(action: typeof startCheckoutAction) {
+  async function go(action: () => ReturnType<typeof startCheckoutAction>) {
     setBusy(true);
     setError(null);
     const res = await action();
@@ -52,7 +53,8 @@ export default function PremiumPage() {
       {status.premium ? (
         <section className="card space-y-3 border-teal">
           <p className="text-lg font-semibold">✓ You&apos;re Premium</p>
-          <p className="text-twilight/70">Unlimited food photo scans. Thanks for supporting GymNado!</p>
+          <p className="text-twilight/70">Unlimited food photo scans and sport-specific training. Thanks for supporting GymNado!</p>
+          {notice === "success" && <Link href="/" className="btn w-full">Continue to GymNado →</Link>}
           <button className="btn-secondary w-full" onClick={() => go(manageBillingAction)} disabled={busy}>
             {busy ? "Opening…" : "Manage or cancel subscription"}
           </button>
@@ -65,12 +67,13 @@ export default function PremiumPage() {
           </div>
           <ul className="space-y-1">
             <li>✓ Unlimited food photo scans</li>
+            <li>✓ Sport-specific training for your sports</li>
             <li>✓ Instant calories and macros from any meal</li>
           </ul>
           <p className="rounded-lg bg-cyan p-3 text-sm">
             You&apos;ve used {Math.min(status.used, FREE_SCANS)} of your {FREE_SCANS} free scans.
           </p>
-          <button className="btn w-full py-3 text-lg" onClick={() => go(startCheckoutAction)} disabled={busy}>
+          <button className="btn w-full py-3 text-lg" onClick={() => go(() => startCheckoutAction())} disabled={busy}>
             {busy ? "Opening checkout…" : `Upgrade for ${PREMIUM_PRICE_LABEL}`}
           </button>
           <p className="text-center text-xs text-twilight/50">Secure payment by Stripe.</p>

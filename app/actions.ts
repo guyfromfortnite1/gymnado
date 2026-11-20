@@ -54,8 +54,11 @@ const describe = (pe: PlanExercise) => {
 /** Rules build the plan, Claude explains and tunes it, then it's saved and scheduled from `today`. */
 export async function generatePlanAction(today: string): Promise<Result<{ aiNote?: string }>> {
   try {
-    const { supabase, profile } = await session();
-    if (!profile) return { ok: false, error: "Complete your profile first." };
+    const { supabase, profile: saved } = await session();
+    if (!saved) return { ok: false, error: "Complete your profile first." };
+    // Sport-specific training is Premium-only.
+    const premium = isPremiumStatus((await getSubscription(supabase))?.status);
+    const profile = premium ? saved : { ...saved, sports: [] };
 
     const { splitName, days } = generatePlan(profile);
     let explanation: string | null = null;
@@ -153,7 +156,7 @@ export async function analyzeFoodAction(dataUrl: string): Promise<Result<{ items
 const siteOrigin = async () => (await headers()).get("origin") ?? "http://localhost:3000";
 
 /** Starts a Stripe Checkout for Premium and returns the payment page URL. */
-export async function startCheckoutAction(): Promise<Result<{ url: string }>> {
+export async function startCheckoutAction(from: "premium" | "choose-plan" = "premium"): Promise<Result<{ url: string }>> {
   try {
     const { supabase, user } = await session();
     const sub = await getSubscription(supabase);
@@ -168,7 +171,7 @@ export async function startCheckoutAction(): Promise<Result<{ url: string }>> {
       // The webhook reads user_id from the subscription to know who paid.
       subscription_data: { metadata: { user_id: user.id } },
       success_url: `${origin}/premium?success=1`,
-      cancel_url: `${origin}/premium?canceled=1`,
+      cancel_url: from === "choose-plan" ? `${origin}/choose-plan` : `${origin}/premium?canceled=1`,
     });
     return checkout.url ? { ok: true, url: checkout.url } : { ok: false, error: "Couldn't start checkout. Try again." };
   } catch (e) {

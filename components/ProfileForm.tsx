@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import PremiumSurface, { PremiumBadge } from "@/components/PremiumSurface";
+import { useScanStatus } from "@/lib/hooks";
 import { createClient } from "@/lib/supabase/client";
 import { cmToFtIn, ftInToCm, kgToLb, lbToKg } from "@/lib/units";
 import { fadeOutMs, wait } from "@/lib/motion";
@@ -47,6 +50,22 @@ function Option({ on, onClick, label, blurb }: { on: boolean; onClick: () => voi
   );
 }
 
+/** A multi-select choice shown as a photo card (photos live in public/muscles and public/sports). */
+function PhotoCard({ src, label, on, onClick }: { src: string; label: string; on: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={on}
+      className={`group relative overflow-hidden rounded-xl border-2 text-left transition ${on ? "border-teal" : "border-frost hover:border-surf"}`}
+    >
+      <Image src={src} alt="" width={240} height={180} className={`h-24 w-full object-cover transition duration-300 ${on ? "scale-105" : "group-hover:scale-105"}`} />
+      <span className={`block px-2 py-1 text-sm font-semibold ${on ? "bg-teal text-white" : "bg-white text-twilight"}`}>{label}</span>
+      {on && <span className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-teal text-sm text-white shadow" aria-hidden>✓</span>}
+    </button>
+  );
+}
+
 type Step = { title: string; hint?: string; check?: () => string | null; body: React.ReactNode };
 
 /**
@@ -68,6 +87,13 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState(0);
   const [fading, setFading] = useState(false);
+  // Sports are Premium-only. Re-check when the tab regains focus, in case they upgraded in another tab.
+  const { status: scanStatus, reload: reloadPremium } = useScanStatus();
+  const premium = !!scanStatus?.premium;
+  useEffect(() => {
+    window.addEventListener("focus", reloadPremium);
+    return () => window.removeEventListener("focus", reloadPremium);
+  }, [reloadPremium]);
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setP((prev) => ({ ...prev, [k]: v }));
 
@@ -182,25 +208,39 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
       title: "Which muscles do you want to prioritize?",
       hint: "Optional. Each one gets extra work on the days that train it.",
       body: (
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
           {(Object.keys(MUSCLES) as Muscle[]).map((m) => (
-            <Chip key={m} on={p.target_muscles.includes(m)} onClick={() => set("target_muscles", toggle(p.target_muscles, m))}>{MUSCLES[m]}</Chip>
+            <PhotoCard key={m} src={`/muscles/${m}.jpg`} label={MUSCLES[m]} on={p.target_muscles.includes(m)} onClick={() => set("target_muscles", toggle(p.target_muscles, m))} />
           ))}
         </div>
       ),
     },
     {
       title: "Do you play any sports?",
-      hint: "Optional. Pick as many as you like. Each one adds a sport-specific exercise to every workout.",
-      body: (
+      hint: premium ? "Optional. Pick as many as you like. Each one adds a sport-specific exercise to every workout." : undefined,
+      body: !premium ? (
+        <PremiumSurface className="space-y-3">
+          <PremiumBadge />
+          <p className="text-lg font-semibold">Build a physique for your sport</p>
+          <p className="text-sm text-cyan/90">
+            Premium adds sport-specific exercises to every workout, for basketball, soccer, boxing, running, tennis and more.
+          </p>
+          <a href="/premium" target="_blank" rel="noopener" className="inline-flex rounded-xl bg-white px-4 py-2 font-semibold text-twilight transition hover:bg-cyan">
+            Upgrade to unlock
+          </a>
+          <p className="text-xs text-cyan/70">Opens in a new tab so you keep your answers. Or press Continue to skip.</p>
+        </PremiumSurface>
+      ) : (
         <div className="space-y-3">
-          <Chip on={p.sports.length === 0} onClick={() => set("sports", [])}>None</Chip>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <PhotoCard src="/sports/none.jpg" label="None" on={p.sports.length === 0} onClick={() => set("sports", [])} />
+          </div>
           {Object.entries(SPORT_GROUPS).map(([group, sports]) => (
             <div key={group}>
               <p className="mb-1 text-sm font-medium text-twilight/60">{group}</p>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {Object.entries(sports).map(([id, label]) => (
-                  <Chip key={id} on={p.sports.includes(id as Sport)} onClick={() => set("sports", toggle(p.sports, id as Sport))}>{label}</Chip>
+                  <PhotoCard key={id} src={`/sports/${id}.jpg`} label={label} on={p.sports.includes(id as Sport)} onClick={() => set("sports", toggle(p.sports, id as Sport))} />
                 ))}
               </div>
             </div>
@@ -250,7 +290,7 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
     const supabase = createClient();
     const { data } = await supabase.auth.getUser();
     const { error: err } = await supabase.from("profiles").upsert({
-      ...p, id: data.user!.id, height_cm: roundedHeight(), weight_kg: roundedWeight(),
+      ...p, sports: premium ? p.sports : [], id: data.user!.id, height_cm: roundedHeight(), weight_kg: roundedWeight(),
       training_days: [...p.training_days].sort(), updated_at: new Date().toISOString(),
     });
     if (!err && (await onSaved()) === "leaving") return; // keep the busy card up while the page navigates away
