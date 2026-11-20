@@ -46,6 +46,27 @@ export default function Dashboard() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Today</h1>
 
+      {/* One tap into workout mode: today's workout, or start the next one early on a rest day. */}
+      {(() => {
+        const todays = workouts.find((w) => w.status === "planned");
+        const target = todays ?? next;
+        if (!target) return null;
+        return (
+          <Link
+            href={`/workout/${target.id}`}
+            className="flex items-center gap-4 rounded-2xl bg-accent p-4 text-accent-ink shadow-sm transition duration-200 hover:scale-[1.02] hover:bg-accent-hover"
+          >
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-navy text-2xl text-white" aria-hidden>▶</span>
+            <span className="flex-1">
+              <span className="block text-lg font-bold">{todays ? "Start today's workout" : "Start your next workout early"}</span>
+              <span className="block text-sm opacity-80">
+                {target.plan_days.name} · {target.plan_days.exercises.length} exercises{todays ? "" : ` · planned for ${formatShort(target.date)}`}
+              </span>
+            </span>
+          </Link>
+        );
+      })()}
+
       <section className="card">
         <h2 className="mb-2 text-lg font-semibold">Workout</h2>
         {workouts.length === 0 && (

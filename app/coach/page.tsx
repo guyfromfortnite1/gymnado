@@ -82,7 +82,7 @@ export default function CoachPage() {
         )}
         {turns.map((t, i) => (
           <div key={i} className={`fade-in flex ${t.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed ${t.role === "user" ? "rounded-br-sm bg-teal text-white" : "rounded-bl-sm bg-cyan text-twilight"}`}>
+            <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed ${t.role === "user" ? "rounded-br-sm bg-accent text-accent-ink" : "rounded-bl-sm bg-cyan text-twilight"}`}>
               {t.content}
             </div>
           </div>

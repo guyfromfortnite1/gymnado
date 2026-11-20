@@ -8,6 +8,10 @@
   --color-cyan: #caf0f8;     /* light-cyan: backgrounds */
   --color-surface: #ffffff;  /* cards, inputs */
   --color-page: #f3fcfe;     /* page background */
+  /* Buttons and selected options: soft light blue in light mode, strong blue in dark mode. */
+  --color-accent: #9be3f2;
+  --color-accent-hover: #74d4ea;
+  --color-accent-ink: #03045e;
   /* Fixed brand colors that don't flip in dark mode (nav bar, Premium panels). */
   --color-navy: #03045e;
   --color-ice: #caf0f8;
@@ -25,6 +29,9 @@
   --color-surface: #0c1849;
   --color-page: #060d33;
   --color-navy: #020524;
+  --color-accent: #2b95d6;
+  --color-accent-hover: #3aa7e8;
+  --color-accent-ink: #ffffff;
 }
 
 body {
@@ -37,7 +44,7 @@ body {
     @apply rounded-2xl border border-frost bg-surface p-4 shadow-sm;
   }
   .btn {
-    @apply inline-flex items-center justify-center rounded-xl bg-teal px-4 py-2 font-medium text-white transition hover:bg-navy disabled:opacity-50;
+    @apply inline-flex items-center justify-center rounded-xl bg-accent px-4 py-2 font-semibold text-accent-ink transition hover:bg-accent-hover disabled:opacity-50;
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center rounded-xl border border-frost bg-cyan px-4 py-2 font-medium text-twilight transition hover:bg-frost disabled:opacity-50;
@@ -52,7 +59,7 @@ body {
     @apply cursor-pointer rounded-full border border-frost bg-surface px-3 py-1 text-sm text-twilight transition duration-200 hover:scale-110 hover:shadow-sm;
   }
   .chip-on {
-    @apply border-teal bg-teal text-white;
+    @apply border-teal bg-accent text-accent-ink;
   }
 }
 

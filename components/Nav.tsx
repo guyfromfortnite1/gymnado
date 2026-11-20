@@ -66,6 +66,12 @@ function NavBar({ path }: { path: string }) {
         <div className="flex items-center gap-1">
           <Link href="/" aria-label="GymNado home"><Logo size={22} dark /></Link>
           <span className="flex-1" />
+          <Link
+            href="/workout/next"
+            className="mr-1 flex items-center gap-1.5 whitespace-nowrap rounded-full bg-surf px-3 py-1.5 text-sm font-semibold text-navy transition hover:scale-105 hover:bg-ice"
+          >
+            <span aria-hidden>▶</span> Workout
+          </Link>
           <IconLink href="/profile" label="Profile" active={path === "/profile"}>
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
               <circle cx="12" cy="8" r="4" />

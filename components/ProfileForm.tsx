@@ -45,10 +45,10 @@ function Option({ on, onClick, label, blurb }: { on: boolean; onClick: () => voi
       type="button"
       onClick={onClick}
       aria-pressed={on}
-      className={`w-full rounded-xl border p-3 text-left transition duration-200 hover:scale-[1.03] hover:shadow-md ${on ? "border-teal bg-teal text-white" : "border-frost bg-surface hover:bg-cyan"}`}
+      className={`w-full rounded-xl border p-3 text-left transition duration-200 hover:scale-[1.03] hover:shadow-md ${on ? "border-teal bg-accent text-accent-ink" : "border-frost bg-surface hover:bg-cyan"}`}
     >
       <div className="font-semibold">{label}</div>
-      {blurb && <div className={`text-sm ${on ? "text-ice" : "text-twilight/60"}`}>{blurb}</div>}
+      {blurb && <div className={`text-sm ${on ? "text-accent-ink/75" : "text-twilight/60"}`}>{blurb}</div>}
     </button>
   );
 }
@@ -67,7 +67,7 @@ function PhotoCard({ src, muscle, label, on, onClick }: { src?: string; muscle?:
       ) : (
         <Image src={src!} alt="" width={240} height={180} className="h-24 w-full object-cover" />
       )}
-      <span className={`block px-2 py-1 text-sm font-semibold ${on ? "bg-teal text-white" : "bg-surface text-twilight"}`}>{label}</span>
+      <span className={`block px-2 py-1 text-sm font-semibold ${on ? "bg-accent text-accent-ink" : "bg-surface text-twilight"}`}>{label}</span>
       {on && <span className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-teal text-sm text-white shadow" aria-hidden>✓</span>}
     </button>
   );

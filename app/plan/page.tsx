@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import ExerciseList from "@/components/ExerciseList";
 import { generatePlanAction, swapExerciseAction } from "@/app/actions";
@@ -18,6 +19,8 @@ export default function PlanPage() {
   const [note, setNote] = useState<string | null>(null);
   const [swapping, setSwapping] = useState<{ dayId: string; index: number } | null>(null);
   const [reason, setReason] = useState("");
+  // Next planned session of each plan day, for its "Start" button.
+  const [nextByDay, setNextByDay] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     const { data } = await createClient()
@@ -29,6 +32,16 @@ export default function PlanPage() {
       .maybeSingle<Plan>();
     data?.plan_days.sort((a, b) => a.day_index - b.day_index);
     setPlan(data);
+    const { data: upcoming } = await createClient()
+      .from("scheduled_workouts")
+      .select("id, plan_day_id")
+      .eq("status", "planned")
+      .gte("date", todayLocal())
+      .order("date")
+      .returns<{ id: string; plan_day_id: string }[]>();
+    const firsts: Record<string, string> = {};
+    for (const w of upcoming ?? []) firsts[w.plan_day_id] ??= w.id;
+    setNextByDay(firsts);
   }, []);
 
   useEffect(() => {
@@ -83,9 +96,12 @@ export default function PlanPage() {
 
       {plan?.plan_days.map((day) => (
         <section key={day.id} className="card">
-          <h2 className="mb-1 text-lg font-semibold">
-            Day {day.day_index + 1}: {day.name}
-          </h2>
+          <div className="mb-1 flex items-center gap-2">
+            <h2 className="flex-1 text-lg font-semibold">
+              Day {day.day_index + 1}: {day.name}
+            </h2>
+            {nextByDay[day.id] && <Link href={`/workout/${nextByDay[day.id]}`} className="btn px-3 py-1.5 text-sm">▶ Start</Link>}
+          </div>
           <ExerciseList
             exercises={day.exercises}
             action={(i) =>
