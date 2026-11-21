@@ -46,3 +46,25 @@ export function useToday() {
   useEffect(() => setToday(todayLocal()), []);
   return today;
 }
+
+/** Settings saved on the account (Supabase user metadata), so they follow the user to any device. */
+export type Prefs = { auto_log_meals: boolean; auto_complete_workouts: boolean };
+export const DEFAULT_PREFS: Prefs = { auto_log_meals: false, auto_complete_workouts: true };
+
+export function usePrefs() {
+  const [prefs, setPrefs] = useState<Prefs | null>(null);
+  useEffect(() => {
+    createClient().auth.getUser().then(({ data }) => {
+      const m = data.user?.user_metadata ?? {};
+      setPrefs({
+        auto_log_meals: typeof m.auto_log_meals === "boolean" ? m.auto_log_meals : DEFAULT_PREFS.auto_log_meals,
+        auto_complete_workouts: typeof m.auto_complete_workouts === "boolean" ? m.auto_complete_workouts : DEFAULT_PREFS.auto_complete_workouts,
+      });
+    });
+  }, []);
+  const setPref = useCallback(async <K extends keyof Prefs>(key: K, value: Prefs[K]) => {
+    setPrefs((p) => (p ? { ...p, [key]: value } : p));
+    await createClient().auth.updateUser({ data: { [key]: value } });
+  }, []);
+  return { prefs, setPref };
+}

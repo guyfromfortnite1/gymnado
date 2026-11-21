@@ -7,7 +7,7 @@ import { ExerciseThumb, formatSets } from "@/components/ExerciseList";
 import PremiumSurface, { PremiumBadge } from "@/components/PremiumSurface";
 import { PageSkeleton } from "@/components/Skeleton";
 import { EXERCISE_BY_ID } from "@/lib/exercises";
-import { useProfile, useScanStatus } from "@/lib/hooks";
+import { usePrefs, useProfile, useScanStatus } from "@/lib/hooks";
 import { createClient } from "@/lib/supabase/client";
 import type { PlanExercise } from "@/lib/types";
 import { kgToLb, lbToKg } from "@/lib/units";
@@ -20,6 +20,11 @@ export default function WorkoutRunner() {
   const router = useRouter();
   const profile = useProfile();
   const { status } = useScanStatus();
+  // Settings → Auto-complete workouts (on by default): tick exercises off and mark the workout done automatically.
+  const { prefs } = usePrefs();
+  const autoComplete = prefs?.auto_complete_workouts ?? true;
+  const [doneEx, setDoneEx] = useState<number[]>([]);
+  const [markedDone, setMarkedDone] = useState(false);
   const [workout, setWorkout] = useState<Workout | null | undefined>(undefined);
   const [lastKg, setLastKg] = useState<Record<string, number>>({});
   const [ex, setEx] = useState(0);
@@ -60,17 +65,27 @@ export default function WorkoutRunner() {
      
   }, [current, lastKg, imperial]);
 
+  const markWorkoutDone = useCallback(() => {
+    if (!workout) return;
+    setMarkedDone(true);
+    createClient().from("scheduled_workouts").update({ status: "done" }).eq("id", workout.id).then(() => {});
+  }, [workout]);
+
   const advance = useCallback(() => {
     if (!workout) return;
     if (set < totalSets) return setSet(set + 1);
+    // Finished this exercise's last set.
+    if (autoComplete) setDoneEx((d) => (d.includes(ex) ? d : [...d, ex]));
     if (ex < workout.plan_days.exercises.length - 1) {
       setEx(ex + 1);
       setSet(1);
       return;
     }
     setFinished(true);
-    createClient().from("scheduled_workouts").update({ status: "done" }).eq("id", workout.id).then(() => {});
-  }, [workout, set, totalSets, ex]);
+    if (autoComplete) markWorkoutDone();
+  }, [workout, set, totalSets, ex, autoComplete, markWorkoutDone]);
+
+  const toggleExercise = (i: number) => setDoneEx((d) => (d.includes(i) ? d.filter((x) => x !== i) : [...d, i]));
 
   // Rest countdown.
   useEffect(() => {
@@ -119,6 +134,11 @@ export default function WorkoutRunner() {
         <div className="text-6xl">🎉</div>
         <h1 className="text-3xl font-bold">Workout complete!</h1>
         <p className="text-twilight/70">{workout.plan_days.name} · {exercises.length} exercises · {allSets} sets</p>
+        {markedDone ? (
+          <p className="text-sm font-medium text-teal">✓ Marked as done on your schedule</p>
+        ) : (
+          <button className="btn w-full py-3" onClick={markWorkoutDone}>✓ Mark workout as done</button>
+        )}
         <div className="flex justify-center gap-2">
           <button className="btn" onClick={() => router.push("/")}>Back to today</button>
           {premium && <button className="btn-secondary" onClick={() => router.push("/progress")}>See progress</button>}
@@ -185,6 +205,34 @@ export default function WorkoutRunner() {
           </button>
         </section>
       )}
+
+      {/* Exercise checklist: ticked off automatically (Settings → Auto-complete workouts) or by tapping. */}
+      <section className="card">
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-twilight/50">Exercises</h2>
+        <ul className="space-y-1">
+          {exercises.map((e, i) => {
+            const done = doneEx.includes(i);
+            const current = i === ex && !done;
+            return (
+              <li key={`${e.exercise_id}-${i}`}>
+                <button
+                  type="button"
+                  onClick={() => toggleExercise(i)}
+                  className={`flex w-full items-center gap-3 rounded-xl px-2 py-1.5 text-left transition hover:bg-cyan ${current ? "bg-cyan/70" : ""}`}
+                  aria-pressed={done}
+                >
+                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${done ? "bg-accent text-accent-ink" : current ? "bg-navy text-white" : "border border-frost text-twilight/50"}`}>
+                    {done ? "✓" : current ? "▶" : i + 1}
+                  </span>
+                  <span className={`flex-1 ${done ? "text-twilight/50 line-through" : ""}`}>{EXERCISE_BY_ID[e.exercise_id]?.name ?? e.exercise_id}</span>
+                  <span className="text-xs text-twilight/50">{formatSets(e)}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        {!autoComplete && <p className="mt-2 text-xs text-twilight/50">Tap an exercise to tick it off. Turn on auto-complete in Settings to do this automatically.</p>}
+      </section>
 
       <button className="w-full text-sm text-twilight/60 hover:underline" onClick={() => router.push("/")}>End workout</button>
     </div>

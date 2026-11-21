@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import { analyzeFoodAction } from "@/app/actions";
 import { PageSkeleton } from "@/components/Skeleton";
 import { EMPTY_ITEM, resizeImage, takePendingMeal } from "@/lib/food";
-import { useScanStatus, useToday } from "@/lib/hooks";
+import { usePrefs, useScanStatus, useToday } from "@/lib/hooks";
 import { sumMacros } from "@/lib/macros";
 import { wait } from "@/lib/motion";
 import { FREE_SCANS, PREMIUM_PRICE_LABEL } from "@/lib/premium";
@@ -33,6 +33,9 @@ export default function LogMealPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const autoStarted = useRef(false);
+  const { prefs } = usePrefs();
+  const [justScanned, setJustScanned] = useState(false);
+  const [autoLogged, setAutoLogged] = useState(false);
 
   const outOfScans = !!scans && !scans.premium && scans.used >= FREE_SCANS;
 
@@ -67,8 +70,10 @@ export default function LogMealPage() {
     setScanning(false);
     setBusy(false);
     reloadScans();
-    if (res.ok) setItems(res.items.map((i) => ({ ...i, calories: Math.round(i.calories), protein_g: Math.round(i.protein_g), carbs_g: Math.round(i.carbs_g), fat_g: Math.round(i.fat_g) })));
-    else setError(res.error);
+    if (!res.ok) return setError(res.error);
+    const found = res.items.map((i) => ({ ...i, calories: Math.round(i.calories), protein_g: Math.round(i.protein_g), carbs_g: Math.round(i.carbs_g), fat_g: Math.round(i.fat_g) }));
+    setItems(found);
+    setJustScanned(true);
   }, [reloadScans]);
 
   // A photo from the Food tab starts scanning straight away (unless the free scans are used up).
@@ -94,18 +99,29 @@ export default function LogMealPage() {
 
   const edit = (idx: number, patch: Partial<FoodItem>) => setItems(items.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
 
-  async function saveMeal() {
-    const clean = items.filter((i) => i.name.trim());
+  async function saveMeal(list: FoodItem[] = items, automatic = false) {
+    const clean = list.filter((i) => i.name.trim());
     if (!clean.length || !today) return setError("Add at least one item with a name.");
     setBusy(true);
+    if (automatic) setAutoLogged(true);
     const t = sumMacros(clean);
     const { error: err } = await createClient().from("food_logs").insert({ date: today, items: clean, ...t, calories: Math.round(t.calories) });
     if (err) {
       setBusy(false);
       return setError(err.message);
     }
+    if (automatic) await wait(1400); // show "Logged automatically" for a moment
     router.push("/food");
   }
+  // Settings → Auto-log scanned meals: save straight away after a scan and head back to the Food tab.
+  const autoLog = useEffectEvent((list: FoodItem[]) => {
+    if (prefs?.auto_log_meals) saveMeal(list, true);
+  });
+  useEffect(() => {
+    if (!justScanned) return;
+    setJustScanned(false);
+    autoLog(items);
+  }, [justScanned, items]);
 
   if (!ready || !today || !scans) return <PageSkeleton cards={1} />;
   const total = sumMacros(items);
@@ -174,6 +190,16 @@ export default function LogMealPage() {
 
       {error && <p className="rounded-lg bg-cyan p-3 text-sm font-medium">{error}</p>}
 
+      {autoLogged && (
+        <div className="card fade-in flex items-center gap-3 border-teal" role="status">
+          <span className="text-2xl" aria-hidden>✅</span>
+          <span className="flex-1">
+            <span className="block font-semibold">Logged automatically</span>
+            <span className="block text-sm text-twilight/60">{Math.round(sumMacros(items).calories)} kcal added to today. Taking you back to Food…</span>
+          </span>
+        </div>
+      )}
+
       {items.length > 0 && (
         <section className="card fade-in space-y-3">
           <div>
@@ -210,7 +236,7 @@ export default function LogMealPage() {
           ))}
           <button className="text-sm font-medium text-teal hover:underline" onClick={() => setItems([...items, { ...EMPTY_ITEM }])}>+ Add another item</button>
           <div className="flex gap-2">
-            <button className="btn flex-1 py-3 text-lg" onClick={saveMeal} disabled={busy || scanning}>{busy ? "Saving…" : "✓ Save meal"}</button>
+            <button className="btn flex-1 py-3 text-lg" onClick={() => saveMeal()} disabled={busy || scanning}>{busy ? "Saving…" : "✓ Save meal"}</button>
             <Link href="/food" className="btn-secondary py-3">Cancel</Link>
           </div>
         </section>

@@ -31,7 +31,7 @@ function Tab({ href, active, children }: { href: string; active: boolean; childr
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`whitespace-nowrap px-3 py-1.5 text-sm transition ${active ? "bg-teal font-semibold text-white" : "text-ice/85 hover:bg-white/10 hover:text-white"}`}
+      className={`whitespace-nowrap px-3 py-1.5 text-sm transition ${active ? "bg-accent font-semibold text-accent-ink" : "text-navy/80 hover:bg-white/70 hover:text-navy dark:text-ice/85 dark:hover:bg-white/10 dark:hover:text-white"}`}
     >
       {children}
     </Link>
@@ -40,7 +40,7 @@ function Tab({ href, active, children }: { href: string; active: boolean; childr
 
 /** A row of tabs with a divider line between each one. */
 function TabGroup({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`flex divide-x divide-white/15 overflow-hidden rounded-xl border border-white/15 ${className}`}>{children}</div>;
+  return <div className={`flex divide-x divide-frost overflow-hidden rounded-xl border border-frost bg-white/40 dark:divide-white/15 dark:border-white/15 dark:bg-transparent ${className}`}>{children}</div>;
 }
 
 function IconLink({ href, label, active, children }: { href: string; label: string; active: boolean; children: React.ReactNode }) {
@@ -49,7 +49,7 @@ function IconLink({ href, label, active, children }: { href: string; label: stri
       href={href}
       aria-label={label}
       title={label}
-      className={`flex h-9 w-9 items-center justify-center rounded-full transition hover:scale-110 ${active ? "bg-teal text-white" : "text-ice/85 hover:bg-white/10 hover:text-white"}`}
+      className={`flex h-9 w-9 items-center justify-center rounded-full transition hover:scale-110 ${active ? "bg-accent text-accent-ink" : "text-navy/80 hover:bg-white/70 hover:text-navy dark:text-ice/85 dark:hover:bg-white/10 dark:hover:text-white"}`}
     >
       {children}
     </Link>
@@ -61,14 +61,14 @@ function NavBar({ path }: { path: string }) {
   const premium = !!status?.premium;
 
   return (
-    <header className="bg-navy text-white">
+    <header className="border-b border-frost bg-cyan text-navy dark:border-transparent dark:bg-navy dark:text-white">
       <div className="mx-auto max-w-3xl space-y-2 px-4 py-3">
         <div className="flex items-center gap-1">
-          <Link href="/" aria-label="GymNado home"><Logo size={22} dark /></Link>
+          <Link href="/" aria-label="GymNado home"><Logo size={22} /></Link>
           <span className="flex-1" />
           <Link
             href="/workout/next"
-            className="mr-1 flex items-center gap-1.5 whitespace-nowrap rounded-full bg-surf px-3 py-1.5 text-sm font-semibold text-navy transition hover:scale-105 hover:bg-ice"
+            className="mr-1 flex items-center gap-1.5 whitespace-nowrap rounded-full bg-navy px-3 py-1.5 text-sm font-semibold text-white transition hover:scale-105 hover:bg-teal dark:bg-surf dark:text-navy dark:hover:bg-ice"
           >
             <span aria-hidden>▶</span> Workout
           </Link>
@@ -90,7 +90,7 @@ function NavBar({ path }: { path: string }) {
             {FREE_TABS.map((t) => <Tab key={t.href} href={t.href} active={t.href === "/" ? path === "/" : path.startsWith(t.href)}>{t.label}</Tab>)}
           </TabGroup>
           <span className="flex-1" />
-          <TabGroup className="border-surf/40">
+          <TabGroup className="border-surf/60 dark:border-surf/40">
             {PREMIUM_TABS.map((t) => (
               <Tab key={t.href} href={premium ? t.href : "/premium"} active={path === t.href}>
                 <span aria-hidden>💎 </span>{t.label}

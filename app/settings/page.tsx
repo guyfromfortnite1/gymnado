@@ -7,7 +7,8 @@ import InstallCard from "@/components/InstallCard";
 import PremiumSurface, { PremiumBadge } from "@/components/PremiumSurface";
 import { PageSkeleton } from "@/components/Skeleton";
 import ThemeToggle from "@/components/ThemeToggle";
-import { useScanStatus } from "@/lib/hooks";
+import Switch from "@/components/Switch";
+import { usePrefs, useScanStatus } from "@/lib/hooks";
 import { PREMIUM_PRICE_LABEL } from "@/lib/premium";
 import { CONTACT_EMAIL } from "@/lib/site";
 import { createClient } from "@/lib/supabase/client";
@@ -28,6 +29,7 @@ function Row({ href, icon, label, detail }: { href: string; icon: string; label:
 export default function SettingsPage() {
   const router = useRouter();
   const { status } = useScanStatus();
+  const { prefs, setPref } = usePrefs();
   const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,6 +57,30 @@ export default function SettingsPage() {
       <section className="card space-y-1">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-twilight/50">Appearance</h2>
         <ThemeToggle />
+      </section>
+
+      <section className="card space-y-1">
+        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-twilight/50">Automation</h2>
+        {prefs ? (
+          <>
+            <Switch
+              icon="🍽️"
+              label="Auto-log scanned meals"
+              detail="Save a meal as soon as the photo is analyzed, without reviewing it first."
+              on={prefs.auto_log_meals}
+              onChange={(v) => setPref("auto_log_meals", v)}
+            />
+            <Switch
+              icon="✅"
+              label="Auto-complete workouts"
+              detail="Tick off each exercise after its last set, and mark the workout done when you finish."
+              on={prefs.auto_complete_workouts}
+              onChange={(v) => setPref("auto_complete_workouts", v)}
+            />
+          </>
+        ) : (
+          <p className="px-1 py-2 text-sm text-twilight/50">Loading…</p>
+        )}
       </section>
 
       <section className="space-y-2">

@@ -15,9 +15,15 @@ import { SPORTS, type FoodItem, type PlanDay, type PlanExercise, type Profile } 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
 function aiError(e: unknown): string {
+  // Full details go to the server log (Netlify → Logs → Functions); the user gets a short message.
+  console.error("[ai] request failed:", e instanceof Anthropic.APIError ? { status: e.status, error: e.error, message: e.message } : e);
   if (e instanceof Anthropic.AuthenticationError) return "The Anthropic API key is missing or invalid (ANTHROPIC_API_KEY in .env.local).";
   if (e instanceof Anthropic.RateLimitError) return "The AI is rate-limited right now. Try again in a minute.";
-  if (e instanceof Anthropic.APIError) return `AI request failed (${e.status ?? "network"}). Try again.`;
+  if (e instanceof Anthropic.APIConnectionTimeoutError) return "The AI took too long to answer. Please try again.";
+  if (e instanceof Anthropic.APIError) {
+    const type = (e.error as { error?: { type?: string } } | undefined)?.error?.type;
+    return `AI request failed (${e.status ?? "network"}${type ? `, ${type}` : ""}). Try again.`;
+  }
   return e instanceof Error ? e.message : "Something went wrong.";
 }
 

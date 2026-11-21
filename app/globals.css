@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* dark: utilities follow the html.dark class set by the theme switch (not the device setting). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-twilight: #03045e; /* deep-twilight: headings, nav, text */
   --color-teal: #0077b6;     /* bright-teal-blue: primary buttons, links */
