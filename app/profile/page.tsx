@@ -8,8 +8,8 @@ import ProfileForm from "@/components/ProfileForm";
 import { generatePlanAction } from "@/app/actions";
 import { todayLocal } from "@/lib/dates";
 import { useProfile } from "@/lib/hooks";
-import { createClient } from "@/lib/supabase/client";
 import { PageSkeleton } from "@/components/Skeleton";
+import { signOutToLogin } from "@/lib/auth";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -17,12 +17,6 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  async function signOut() {
-    await createClient().auth.signOut();
-    router.replace("/login");
-    router.refresh();
-  }
 
   async function regenerate() {
     setBusy(true);
@@ -55,7 +49,7 @@ export default function ProfilePage() {
         busyLabel="Saving…"
         onSaved={() => { setSaved(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}
       />
-      <button className="btn-secondary w-full py-3" onClick={signOut}>Sign out</button>
+      <button className="btn-secondary w-full py-3" onClick={signOutToLogin}>Sign out</button>
     </div>
   );
 }

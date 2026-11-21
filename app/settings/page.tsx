@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import InstallCard from "@/components/InstallCard";
 import PremiumSurface, { PremiumBadge } from "@/components/PremiumSurface";
@@ -12,6 +11,7 @@ import { usePrefs, useScanStatus } from "@/lib/hooks";
 import { PREMIUM_PRICE_LABEL } from "@/lib/premium";
 import { CONTACT_EMAIL } from "@/lib/site";
 import { createClient } from "@/lib/supabase/client";
+import { signOutToLogin } from "@/lib/auth";
 
 function Row({ href, icon, label, detail }: { href: string; icon: string; label: string; detail?: string }) {
   return (
@@ -27,7 +27,6 @@ function Row({ href, icon, label, detail }: { href: string; icon: string; label:
 }
 
 export default function SettingsPage() {
-  const router = useRouter();
   const { status } = useScanStatus();
   const { prefs, setPref } = usePrefs();
   const [email, setEmail] = useState<string | null>(null);
@@ -35,12 +34,6 @@ export default function SettingsPage() {
   useEffect(() => {
     createClient().auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
   }, []);
-
-  async function signOut() {
-    await createClient().auth.signOut();
-    router.replace("/login");
-    router.refresh();
-  }
 
   if (!status || email === null) return <PageSkeleton cards={3} />;
 
@@ -106,7 +99,7 @@ export default function SettingsPage() {
         </a>
       </section>
 
-      <button onClick={signOut} className="btn-secondary w-full py-3">Sign out</button>
+      <button onClick={signOutToLogin} className="btn-secondary w-full py-3">Sign out</button>
     </div>
   );
 }
