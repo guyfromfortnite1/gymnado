@@ -56,7 +56,7 @@ function PhotoCard({ src, muscle, label, on, onClick }: { src?: string; muscle?:
       className={`relative overflow-hidden rounded-xl border-2 text-left transition duration-200 hover:z-10 hover:scale-105 hover:shadow-lg ${on ? "border-teal" : "border-frost hover:border-surf"}`}
     >
       {muscle ? (
-        <MuscleMap muscles={[muscle]} className={`h-24 py-1 ${on ? "bg-cyan" : "bg-surface"}`} />
+        <MuscleMap muscles={[muscle]} className="h-24 bg-surface py-1" />
       ) : (
         <Image src={src!} alt="" width={240} height={180} className="h-24 w-full object-cover" />
       )}
@@ -73,8 +73,10 @@ type Step = { title: string; hint?: string; check?: () => string | null; body: R
  * Calls onSaved() after a successful save; busyLabel is shown while saving and while onSaved() runs.
  * onSaved() returns "leaving" when it navigates away, so the busy card stays up until the page changes.
  */
-export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }: {
+export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved, layout = "steps" }: {
   initial?: Profile; submitLabel: string; busyLabel: string; onSaved: () => Promise<"leaving" | void> | "leaving" | void;
+  /** "steps": one question per screen (first-time setup). "list": every question on one page (Profile). */
+  layout?: "steps" | "list";
 }) {
   const [p, setP] = useState<Draft>(initial ?? DEFAULTS);
   // Display values in the chosen units; converted to cm/kg on save.
@@ -352,6 +354,50 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
     await transition(() => setStep(step - 1));
   }
 
+  /** One question card (plain, or the sparkling Premium surface). */
+  const renderStep = (st: Step, key: string | number, anim = "") =>
+    st.premium ? (
+      <section key={key} className={anim}>
+        <PremiumSurface className="space-y-3">
+          <PremiumBadge />
+          <div>
+            <h2 className="text-lg font-semibold">{st.title}</h2>
+            {st.hint && <p className="text-sm text-ice/80">{st.hint}</p>}
+          </div>
+          {st.body}
+        </PremiumSurface>
+      </section>
+    ) : (
+      <section key={key} className={`card space-y-3 ${anim}`}>
+        <div>
+          <h2 className="text-lg font-semibold">{st.title}</h2>
+          {st.hint && <p className="text-sm text-twilight/60">{st.hint}</p>}
+        </div>
+        {st.body}
+      </section>
+    );
+
+  // List layout (Profile): all questions on one page, checked together on Save.
+  if (layout === "list") {
+    const saveAll = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (busy) return;
+      for (const st of steps) {
+        const problem = st.check?.() ?? null;
+        if (problem) return setError(`${st.title} ${problem}`);
+      }
+      setError(null);
+      save();
+    };
+    return (
+      <form onSubmit={saveAll} className="space-y-4">
+        {steps.map((st, i) => renderStep(st, i))}
+        {error && <p className="rounded-lg bg-cyan p-3 text-sm font-medium">{error}</p>}
+        <button className="btn sticky bottom-3 w-full py-3 text-lg shadow-lg" disabled={busy}>{busy ? busyLabel : submitLabel}</button>
+      </form>
+    );
+  }
+
   const current = steps[step];
   return (
     <form onSubmit={next} className="space-y-4">
@@ -370,26 +416,7 @@ export default function ProfileForm({ initial, submitLabel, busyLabel, onSaved }
           <p className="font-semibold" role="status">{busyLabel}</p>
         </section>
       ) : (
-        current.premium ? (
-          <section key={step} className={fading ? "fade-out" : "fade-in"}>
-            <PremiumSurface className="space-y-3">
-              <PremiumBadge />
-              <div>
-                <h2 className="text-lg font-semibold">{current.title}</h2>
-                {current.hint && <p className="text-sm text-ice/80">{current.hint}</p>}
-              </div>
-              {current.body}
-            </PremiumSurface>
-          </section>
-        ) : (
-          <section key={step} className={`card space-y-3 ${fading ? "fade-out" : "fade-in"}`}>
-            <div>
-              <h2 className="text-lg font-semibold">{current.title}</h2>
-              {current.hint && <p className="text-sm text-twilight/60">{current.hint}</p>}
-            </div>
-            {current.body}
-          </section>
-        )
+        renderStep(current, step, fading ? "fade-out" : "fade-in")
       )}
 
       {error && <p className="rounded-lg bg-cyan p-3 text-sm font-medium">{error}</p>}

@@ -8,6 +8,7 @@ import ProfileForm from "@/components/ProfileForm";
 import { generatePlanAction } from "@/app/actions";
 import { todayLocal } from "@/lib/dates";
 import { useProfile } from "@/lib/hooks";
+import { createClient } from "@/lib/supabase/client";
 import { PageSkeleton } from "@/components/Skeleton";
 
 export default function ProfilePage() {
@@ -16,6 +17,12 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function signOut() {
+    await createClient().auth.signOut();
+    router.replace("/login");
+    router.refresh();
+  }
 
   async function regenerate() {
     setBusy(true);
@@ -41,7 +48,14 @@ export default function ProfilePage() {
         </div>
       )}
       {error && <p className="rounded-lg bg-cyan p-3 text-sm font-medium">{error}</p>}
-      <ProfileForm initial={profile} submitLabel="Save changes" busyLabel="Saving…" onSaved={() => { setSaved(true); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+      <ProfileForm
+        layout="list"
+        initial={profile}
+        submitLabel="Save changes"
+        busyLabel="Saving…"
+        onSaved={() => { setSaved(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+      />
+      <button className="btn-secondary w-full py-3" onClick={signOut}>Sign out</button>
     </div>
   );
 }
